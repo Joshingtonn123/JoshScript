@@ -1,0 +1,352 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Create the main window
+local Window = Rayfield:CreateWindow({
+    Name = "Syrex Hub Bridge Duels",
+    LoadingTitle = "Bridge Duels Scrip",
+    LoadingSubtitle = "by The most handsome guy ever which is me",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "BridgeDuels",
+        FileName = "Settings"
+    },
+    Discord = {
+        Enabled = true,
+        Invite = "noinvitelink", -- Update with your Discord invite
+        RememberJoins = true
+    }
+})
+
+-- Create tabs for different categories
+local CombatTab = Window:CreateTab("Combat", 4483362458)
+local VisualsTab = Window:CreateTab("Visuals", 4483362458)
+local MovementTab = Window:CreateTab("Movement", 4483362458)
+local SettingsTab = Window:CreateTab("Settings", 4483362458)
+
+-- Combat features
+CombatTab:CreateToggle({
+    Name = "Kill Aura",
+    CurrentValue = true,
+    Flag = "KillAuraToggle",
+    Callback = function(Value)
+        KILL_AURA = Value
+    end,
+})
+
+CombatTab:CreateToggle({
+    Name = "Bow Aura (Experimental)",
+    CurrentValue = true,
+    Flag = "BowAuraToggle",
+    Callback = function(Value)
+        BOW_AURA = Value
+    end,
+})
+
+CombatTab:CreateParagraph({
+    Title = "Combat Information",
+    Content = "Kill Aura: Automatically attacks nearby players\nBow Aura: Automatically shoots arrows at distant players"
+})
+
+-- Visuals features
+VisualsTab:CreateToggle({
+    Name = "Anti Aim (Press F5)",
+    CurrentValue = true,
+    Flag = "AntiAimToggle",
+    Callback = function(Value)
+        ANTI_AIM = Value
+    end,
+})
+
+VisualsTab:CreateParagraph({
+    Title = "Visuals Note",
+    Content = "Anti Aim doesn't provide gameplay advantages\nIt's purely for visual effect - press F5 to see"
+})
+
+-- Movement features
+MovementTab:CreateToggle({
+    Name = "Anti Knockback",
+    CurrentValue = true,
+    Flag = "AntiKnockbackToggle",
+    Callback = function(Value)
+        ANTI_KNOCKBACK = Value
+    end,
+})
+
+MovementTab:CreateParagraph({
+    Title = "Movement Information",
+    Content = "Prevents knockback effects from enemy attacks"
+})
+
+-- Settings tab
+SettingsTab:CreateButton({
+    Name = "Save Configuration",
+    Callback = function()
+        Rayfield:Notify({
+            Title = "Settings Saved",
+            Content = "Your configuration has been saved",
+            Duration = 3,
+            Image = 4483362458,
+        })
+    end,
+})
+
+SettingsTab:CreateButton({
+    Name = "Destroy UI",
+    Callback = function()
+        Rayfield:Destroy()
+    end,
+})
+
+SettingsTab:CreateKeybind({
+    Name = "UI Toggle Keybind",
+    CurrentKeybind = "RightShift",
+    HoldToInteract = false,
+    Flag = "UIToggle",
+    Callback = function(Keybind)
+        -- This is handled automatically by Rayfield
+    end,
+})
+
+SettingsTab:CreateParagraph({
+    Title = "Instructions",
+    Content = "Toggle features on/off using the switches\nPress Destroy UI to remove the interface"
+})
+
+-- Initialize script variables
+local KILL_AURA = Rayfield.Flags["KillAuraToggle"].CurrentValue
+local BOW_AURA = Rayfield.Flags["BowAuraToggle"].CurrentValue
+local ANTI_AIM = Rayfield.Flags["AntiAimToggle"].CurrentValue
+local ANTI_KNOCKBACK = Rayfield.Flags["AntiKnockbackToggle"].CurrentValue
+
+-- Show welcome notification
+Rayfield:Notify({
+    Title = "Bridge Duels Script Loaded",
+    Content = "Enjoy the game!",
+    Duration = 6,
+    Image = 4483362458,
+})
+
+-- Services
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+-- Variables
+local Modules = ReplicatedStorage.Modules
+local Constants = ReplicatedStorage.Constants
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+local Zero = Vector3.zero
+
+-- Modules
+local BlinkClient = require(ReplicatedStorage.Blink.Client)
+local KnitClient = require(ReplicatedStorage.Modules.Knit.Client)
+
+local EntityModule = require(Modules.Entity)
+
+local RangedModule = require(Constants.Ranged)
+local MeleeModule = require(Constants.Melee)
+
+-- Blink
+local ItemAction = BlinkClient.item_action
+local AttackAction = ItemAction.attack_entity.fire
+
+-- Knit
+local ViewmodelController = KnitClient.GetController("ViewmodelController")
+
+-- Functions
+local GarbageCollection = { } 
+do
+    local Gc = getgc(true)
+
+    function GarbageCollection.Get(Identifier)
+        local Valid = { }
+
+        for _, Object in Gc do
+            local IsValid = typeof(Object) == "table" and rawget(Object, Identifier)
+
+            if (not IsValid) then
+                continue
+            end
+
+            table.insert(Valid, Object)
+        end
+
+        return Valid
+    end
+end
+
+local Trove = { } 
+do
+    local Components = GarbageCollection.Get("_trove")
+
+    function Trove.GetComponent(Name)
+        for _, Component in Components do
+            local Metatable = getrawmetatable(Component)
+            local ToString = Metatable and Metatable.__tostring
+
+            if (not ToString) then
+                continue
+            end
+
+            local ComponentName = string.match(ToString(Component), "Component<(.+)>")
+
+            if (ComponentName == Name) then
+                return Component
+            end
+        end
+    end
+end
+
+local Sword = { } 
+do
+    Sword.Time = tick()
+
+    function Sword.GetTarget(Range)
+        local Closest, ClosestDistance = nil, Range
+
+        for _, Player in Players:GetChildren() do
+            if (Player == LocalPlayer) then
+                continue
+            end
+
+            local Character = Player.Character
+            local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+
+            local LocalCharacter = LocalPlayer.Character
+            local LocalRoot = LocalCharacter and LocalCharacter:FindFirstChild("HumanoidRootPart")
+
+            if (not Root) or (not LocalRoot) then
+                continue
+            end
+
+            local Distance = (Root.Position - LocalRoot.Position).Magnitude
+
+            if (ClosestDistance > Distance) then
+                Closest = Character
+                ClosestDistance = Distance
+            end
+        end
+
+        return Closest
+    end
+
+    function Sword.Swing(Target)
+        local TargetData = EntityModule.FindByCharacter(Target)
+        local SwordComponent = TargetData and Trove.GetComponent("Sword")
+
+        if (not SwordComponent) then
+            return
+        end
+
+        local SwordName = SwordComponent.Instance.Name
+        local SwingData = {
+            ["weapon_name"] = SwordName,
+            ["target_entity_id"] = TargetData.Id,
+            ["is_crit"] = true,
+            ["extra"] = {
+                ["rizz"] = "No.",
+                ["sigma"] = "The...",
+                ["those"] = Workspace.Name == "Ok",
+            },
+        }
+
+        AttackAction(SwingData)
+
+        setthreadidentity(2)
+            ViewmodelController:PlayAnimation(SwordName)
+        setthreadidentity(8)
+
+        Sword.Time = tick()
+    end
+end
+
+local Bow = { } 
+do
+    Bow.Time = tick()
+
+    function Bow.Fire(Origin, End)
+        local BowComponent = Trove.GetComponent("Bow")
+        local Communication = BowComponent and BowComponent._comm
+
+        if (not Communication) then
+            return
+        end
+
+        local Speed = RangedModule.BOW_SPEED
+        local Direction = CFrame.lookAt(Origin, End).LookVector * Speed
+        Communication:GetFunction("Fire")(Origin + Direction, 0.7):catch(warn)
+
+        Bow.Time = tick()
+    end
+end
+
+local Character = { } 
+do
+    Character.Connections = { }
+
+    function Character.New(Object)
+        if (not Object) then
+            return
+        end
+
+        for _, Connection in Character.Connections do
+            Connection:Disconnect()
+        end
+
+        local Root = Object:WaitForChild("HumanoidRootPart", 9e9)
+
+        Character.Connections.Changed = Root:GetPropertyChangedSignal("Velocity"):Connect(function()
+            if (ANTI_KNOCKBACK) then
+                Root.Velocity = Zero
+            end
+        end)
+    end
+end
+
+-- Connections
+do
+    RunService.RenderStepped:Connect(function()
+        local Origin = Camera.CFrame.Position
+        local SwordTarget, BowTarget = Sword.GetTarget(16), Sword.GetTarget(50)
+
+        if (SwordTarget and tick() - Sword.Time >= 0.1) and KILL_AURA then
+            Sword.Swing(SwordTarget)
+        end
+
+        if (tick() - Bow.Time >= 1.8) and BOW_AURA then
+            local Root = BowTarget and BowTarget:FindFirstChild("HumanoidRootPart")
+
+            if (Root) then
+                Bow.Fire(Origin, Root.Position)
+            end
+        end
+    end)
+
+    Character.New(LocalPlayer.Character)
+    LocalPlayer.CharacterAdded:Connect(Character.New)
+end
+
+-- Hooks
+do
+    local Angles = 0 
+    local LookAt = nil 
+    LookAt = hookfunction(getrenv().CFrame.lookAt, function(Position, At)
+        local Caller = getcallingscript()
+        local ReturnValue = LookAt(Position, At)
+
+        if (tostring(Caller) == "ClientRuntime") and ANTI_AIM then
+            ReturnValue *= CFrame.Angles(Angles, -Angles, -Angles) 
+            Angles += 5
+        end
+
+        return ReturnValue
+    end)
+
+    hookfunction(MeleeModule.isInRange, function()
+        return true
+    end)
+end
