@@ -1,0 +1,130 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Syrex Hub Gym League",
+    LoadingTitle = "JUST WAIT",
+    LoadingSubtitle = "Bitch is like 2 sec to load it",
+    ConfigurationSaving = {
+        Enabled = false,
+    },
+})
+
+-- Create main tab
+local MainTab = Window:CreateTab("Main Features", 4483362458) -- Second argument is optional icon ID
+
+local autoTrainEnabled = false
+local autoCompetitionEnabled = false
+local autoSetTreadmillEnabled = false
+local autoLoadEnabled = false
+
+-- Stamina Threshold Input
+local staminaThreshold = 0
+MainTab:CreateInput({
+    Name = "Stamina Threshold",
+    PlaceholderText = "Enter number",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        staminaThreshold = tonumber(Text) or 0
+    end,
+})
+
+-- Auto Train Toggle
+MainTab:CreateToggle({
+    Name = "Auto Train",
+    CurrentValue = false,
+    Callback = function(state)
+        autoTrainEnabled = state
+        if state then
+            spawn(function()
+                while autoTrainEnabled and task.wait(0.2) do
+                    local clickButton = game:GetService("Players").LocalPlayer.PlayerGui.Main.RightCenter:FindFirstChild("click")
+                    if clickButton and clickButton.Visible then
+                        local VirtualInputManager = game:GetService("VirtualInputManager")
+                        local screenPosition = clickButton.AbsolutePosition
+                        local clickX = screenPosition.X + clickButton.AbsoluteSize.X / 2
+                        local clickY = screenPosition.Y + clickButton.AbsoluteSize.Y / 2
+                        VirtualInputManager:SendMouseButtonEvent(clickX, clickY, 0, true, game, 0)
+                        VirtualInputManager:SendMouseButtonEvent(clickX, clickY, 0, false, game, 0)
+                    end
+                end
+            end)
+        end
+    end,
+})
+
+-- Auto Load Toggle
+MainTab:CreateToggle({
+    Name = "Auto Load",
+    CurrentValue = false,
+    Callback = function(state)
+        autoLoadEnabled = state
+        if state then
+            spawn(function()
+                while autoLoadEnabled and task.wait() do
+                    for _, equipment in pairs(workspace.Equipments:GetChildren()) do
+                        if not autoLoadEnabled then break end
+                        if equipment.Name ~= "treadmill" then
+                            game:GetService("ReplicatedStorage"):WaitForChild("common"):WaitForChild("packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.5.1"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("EquipmentService"):WaitForChild("RF"):WaitForChild("AutoLoad"):InvokeServer()
+                        end
+                    end
+                end
+            end)
+        end
+    end,
+})
+
+-- Auto Set Treadmill Speed
+local function autoSetTreadmillSpeed()
+    while autoSetTreadmillEnabled and task.wait() do
+        for _, equipment in pairs(workspace.Equipments:GetChildren()) do
+            if not autoSetTreadmillEnabled then break end
+            if equipment:IsA("Model") and equipment.Name == "treadmill" then
+                local args = {[1] = true}
+                game:GetService("ReplicatedStorage"):WaitForChild("common"):WaitForChild("packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.5.1"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("EquipmentService"):WaitForChild("RF"):WaitForChild("ChangeSpeed"):InvokeServer(unpack(args))
+            end
+        end
+    end
+end
+
+MainTab:CreateToggle({
+    Name = "Auto Set Treadmill Speed",
+    CurrentValue = false,
+    Callback = function(state)
+        autoSetTreadmillEnabled = state
+        if state then
+            spawn(autoSetTreadmillSpeed)
+        end
+    end,
+})
+
+-- Auto Competition Toggle
+MainTab:CreateToggle({
+    Name = "Auto Competition",
+    CurrentValue = false,
+    Callback = function(state)
+        autoCompetitionEnabled = state
+        if state then
+            spawn(function()
+                while autoCompetitionEnabled and task.wait(0.01) do
+                    local countdownUI = game:GetService("Players").LocalPlayer.PlayerGui.Podium:FindFirstChild("countdown")
+                    if countdownUI then
+                        game:GetService("ReplicatedStorage"):WaitForChild("common"):WaitForChild("packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.5.1"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("PodiumService"):WaitForChild("RE"):WaitForChild("Event"):FireServer()
+                    end
+                end
+            end)
+        end
+    end,
+})
+
+-- Walk Speed Slider
+MainTab:CreateSlider({
+    Name = "Walk Speed",
+    Range = {16, 100},
+    Increment = 1,
+    Suffix = "studs",
+    CurrentValue = 20,
+    Flag = "WalkSpeedSlider",
+    Callback = function(value)
+        game:GetService("Players").LocalPlayer.Character.Humanoid.WalkSpeed = value
+    end,
+})
