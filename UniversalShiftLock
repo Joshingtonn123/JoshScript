@@ -1,0 +1,152 @@
+--[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FakeShiftlockUI"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Name = "ShiftlockToggle"
+button.Size = UDim2.new(0, 130, 0, 50)
+button.Position = UDim2.new(0.5, -65, 1, -90)
+button.AnchorPoint = Vector2.new(0.5, 1)
+button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.Font = Enum.Font.GothamBold
+button.TextSize = 17
+button.Text = "Shiftlock: OFF"
+button.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 14)
+corner.Parent = button
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(80, 80, 80)
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stroke.Parent = button
+
+-- crosshair
+local crosshair = Instance.new("Frame")
+crosshair.Name = "Crosshair"
+crosshair.Size = UDim2.new(0, 6, 0, 6)
+crosshair.Position = UDim2.new(0.5, 0, 0.5, 0)
+crosshair.AnchorPoint = Vector2.new(0.5, 0.5)
+crosshair.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+crosshair.BackgroundTransparency = 0
+crosshair.Visible = false
+crosshair.ZIndex = 10
+crosshair.Parent = screenGui
+
+local crossCorner = Instance.new("UICorner")
+crossCorner.CornerRadius = UDim.new(1, 0)
+crossCorner.Parent = crosshair
+
+-- draggable with tween smoothing
+local dragging, dragInput, dragStart, startPos
+local function updateDrag(input)
+	local delta = input.Position - dragStart
+	local newPos = UDim2.new(
+		startPos.X.Scale, startPos.X.Offset + delta.X,
+		startPos.Y.Scale, startPos.Y.Offset + delta.Y
+	)
+	TweenService:Create(button, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = newPos}):Play()
+end
+
+button.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = button.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+button.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		updateDrag(input)
+	end
+end)
+
+-- shiftlock system
+local shiftlockEnabled = false
+local connection
+
+local function setShiftlock(state)
+	shiftlockEnabled = state
+
+	-- always clear old connection
+	if connection then
+		connection:Disconnect()
+		connection = nil
+	end
+
+	if shiftlockEnabled then
+		button.Text = "Shiftlock: ON"
+		crosshair.Visible = true
+		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+
+		connection = RunService.RenderStepped:Connect(function()
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			if root then
+				local camCF = camera.CFrame
+				root.CFrame = CFrame.new(root.Position, Vector3.new(
+					camCF.LookVector.X + root.Position.X,
+					root.Position.Y,
+					camCF.LookVector.Z + root.Position.Z
+				))
+			end
+		end)
+	else
+		button.Text = "Shiftlock: OFF"
+		crosshair.Visible = false
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	end
+end
+
+button.MouseButton1Click:Connect(function()
+	setShiftlock(not shiftlockEnabled)
+end)
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+	if input.KeyCode == Enum.KeyCode.LeftShift then
+		setShiftlock(not shiftlockEnabled)
+	end
+end)
+
+-- respawn safety
+player.CharacterAdded:Connect(function()
+	if connection then
+		connection:Disconnect()
+		connection = nil
+	end
+	if shiftlockEnabled then
+		task.wait(0.2)
+		setShiftlock(true)
+	else
+		crosshair.Visible = false
+	end
+end)
