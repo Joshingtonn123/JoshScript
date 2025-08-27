@@ -1,0 +1,13 @@
+local function a()
+for _, b in ipairs(game:GetDescendants()) do
+if b:IsA("ProximityPrompt") then
+b.HoldDuration = 0
+     end
+   end
+end
+a()
+game.DescendantAdded:Connect(function(c)
+if c:IsA("ProximityPrompt") then
+c.HoldDuration = 0
+end
+end)
