@@ -1,0 +1,266 @@
+-- === Suiiiii Sticky Emote GUI (Draggable) ===
+do
+    local Players    = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local plr        = Players.LocalPlayer
+
+    local EMOTE_LABEL = "Calmaa"
+    local EMOTE_ID    = 94692231173912
+
+    local currentTracks = {}
+    local keepAliveConn = nil
+    local lastAnimate   = nil
+    local playingEmote  = { label = nil, id = nil }
+
+    local function getHumanoid()
+        local char = plr.Character or plr.CharacterAdded:Wait()
+        return char:FindFirstChildOfClass("Humanoid"), char
+    end
+
+    local function ensureAnimator(h)
+        local a = h:FindFirstChildOfClass("Animator")
+        if not a then a = Instance.new("Animator", h) end
+        return a
+    end
+
+    local function disableDefaultAnimate(char)
+        local a = char and char:FindFirstChild("Animate")
+        if a and a:IsA("LocalScript") then
+            lastAnimate = a
+            a.Disabled = true
+        else
+            lastAnimate = nil
+        end
+    end
+
+    local function enableDefaultAnimate()
+        if lastAnimate and lastAnimate.Parent then
+            lastAnimate.Disabled = false
+        end
+        lastAnimate = nil
+    end
+
+    local function diffNewTracks(animator, before)
+        local seen = {}
+        for _,t in ipairs(before) do seen[t] = true end
+        local new = {}
+        for _,t in ipairs(animator:GetPlayingAnimationTracks()) do
+            if not seen[t] then table.insert(new, t) end
+        end
+        return new
+    end
+
+    local function ensureInDescription(h, label, id)
+        local desc   = h:GetAppliedDescription()
+        local emotes = desc:GetEmotes() or {}
+        local key    = ("E_%s_%d"):format(label:gsub("%W",""), id)
+        emotes[key]  = { id }
+        desc:SetEmotes(emotes)
+        h:ApplyDescription(desc)
+    end
+
+    local function stopEmote()
+        if keepAliveConn then keepAliveConn:Disconnect() keepAliveConn = nil end
+        for _,t in ipairs(currentTracks) do pcall(function() t:Stop(0) end) end
+        currentTracks = {}
+        playingEmote  = { label = nil, id = nil }
+        enableDefaultAnimate()
+    end
+
+    local function playStickyEmote(label, id)
+        local h, char = getHumanoid()
+        if not h then return end
+        if h.RigType ~= Enum.HumanoidRigType.R15 then
+            warn(("[Emotes] %s requires R15."):format(label))
+            return
+        end
+
+        local animator = ensureAnimator(h)
+        local before   = animator:GetPlayingAnimationTracks()
+
+        local ok, track = pcall(function()
+            return h:PlayEmoteAndGetAnimTrackById(id)
+        end)
+        if not ok or not track then
+            ensureInDescription(h, label, id)
+            ok, track = pcall(function()
+                return h:PlayEmoteAndGetAnimTrackById(id)
+            end)
+            if not ok or not track then
+                warn(string.format("[Emotes] Failed to play '%s' (%d): %s", label, id, tostring(track)))
+                return
+            end
+        end
+
+        task.wait()
+        local newTracks = diffNewTracks(animator, before)
+        if #newTracks == 0 and typeof(track) == "Instance" then
+            newTracks = { track }
+        end
+        currentTracks = newTracks
+
+        disableDefaultAnimate(char)
+
+        for _,t in ipairs(currentTracks) do pcall(function() t.Looped = true end) end
+        playingEmote = { label = label, id = id }
+
+        if keepAliveConn then keepAliveConn:Disconnect() keepAliveConn = nil end
+        keepAliveConn = RunService.Heartbeat:Connect(function()
+            local allStopped = true
+            for _,t in ipairs(currentTracks) do
+                if t.IsPlaying then allStopped = false break end
+            end
+            if allStopped and playingEmote.id then
+                local beforeReplay = animator:GetPlayingAnimationTracks()
+                pcall(function() h:PlayEmoteAndGetAnimTrackById(playingEmote.id) end)
+                task.wait()
+                currentTracks = diffNewTracks(animator, beforeReplay)
+                for _,t in ipairs(currentTracks) do pcall(function() t.Looped = true end) end
+            end
+        end)
+    end
+
+    plr.CharacterAdded:Connect(function()
+        stopEmote()
+    end)
+
+    -- === Draggable GUI ===
+    local gui = Instance.new("ScreenGui", plr:WaitForChild("PlayerGui"))
+    gui.ResetOnSpawn = false
+
+    local frame = Instance.new("Frame", gui)
+    frame.Size = UDim2.new(0, 220, 0, 120)
+    frame.Position = UDim2.new(0.5, -110, 0.5, -60)
+    frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    frame.Active = true
+    frame.Draggable = true -- draggable frame
+
+    -- Play button
+    local playBtn = Instance.new("TextButton", frame)
+    playBtn.Size = UDim2.new(1, -20, 0, 40)
+    playBtn.Position = UDim2.new(0, 10, 0, 10)
+    playBtn.Text = "Play "..EMOTE_LABEL
+    playBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+    playBtn.TextColor3 = Color3.new(1, 1, 1)
+    playBtn.Font = Enum.Font.SourceSansBold
+    playBtn.TextSize = 22
+    playBtn.MouseButton1Click:Connect(function()
+        playStickyEmote(EMOTE_LABEL, EMOTE_ID)
+    end)
+
+    -- Stop button
+    local stopBtn = Instance.new("TextButton", frame)
+    stopBtn.Size = UDim2.new(1, -20, 0, 40)
+    stopBtn.Position = UDim2.new(0, 10, 0, 60)
+    stopBtn.Text = "Stop "..EMOTE_LABEL
+    stopBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+    stopBtn.TextColor3 = Color3.new(1, 1, 1)
+    stopBtn.Font = Enum.Font.SourceSansBold
+    stopBtn.TextSize = 22
+    stopBtn.MouseButton1Click:Connect(stopEmote)
+end        local key    = ("E_%s_%d"):format(label:gsub("%W",""), id)
+        emotes[key]  = { id }
+        desc:SetEmotes(emotes)
+        h:ApplyDescription(desc)
+    end
+
+    local function stopEmote()
+        if keepAliveConn then keepAliveConn:Disconnect() keepAliveConn = nil end
+        for _,t in ipairs(currentTracks) do pcall(function() t:Stop(0) end) end
+        currentTracks = {}
+        playingEmote  = { label = nil, id = nil }
+        enableDefaultAnimate()
+    end
+
+    local function playStickyEmote(label, id)
+        local h, char = getHumanoid()
+        if not h then return end
+        if h.RigType ~= Enum.HumanoidRigType.R15 then
+            warn(("[Emotes] %s requires R15."):format(label))
+            return
+        end
+
+        local animator = ensureAnimator(h)
+        local before   = animator:GetPlayingAnimationTracks()
+
+        local ok, track = pcall(function()
+            return h:PlayEmoteAndGetAnimTrackById(id)
+        end)
+        if not ok or not track then
+            ensureInDescription(h, label, id)
+            ok, track = pcall(function()
+                return h:PlayEmoteAndGetAnimTrackById(id)
+            end)
+            if not ok or not track then
+                warn(string.format("[Emotes] Failed to play '%s' (%d): %s", label, id, tostring(track)))
+                return
+            end
+        end
+
+        task.wait()
+        local newTracks = diffNewTracks(animator, before)
+        if #newTracks == 0 and typeof(track) == "Instance" then
+            newTracks = { track }
+        end
+        currentTracks = newTracks
+
+        disableDefaultAnimate(char)
+
+        for _,t in ipairs(currentTracks) do pcall(function() t.Looped = true end) end
+        playingEmote = { label = label, id = id }
+
+        if keepAliveConn then keepAliveConn:Disconnect() keepAliveConn = nil end
+        keepAliveConn = RunService.Heartbeat:Connect(function()
+            local allStopped = true
+            for _,t in ipairs(currentTracks) do
+                if t.IsPlaying then allStopped = false break end
+            end
+            if allStopped and playingEmote.id then
+                local beforeReplay = animator:GetPlayingAnimationTracks()
+                pcall(function() h:PlayEmoteAndGetAnimTrackById(playingEmote.id) end)
+                task.wait()
+                currentTracks = diffNewTracks(animator, beforeReplay)
+                for _,t in ipairs(currentTracks) do pcall(function() t.Looped = true end) end
+            end
+        end)
+    end
+
+    plr.CharacterAdded:Connect(function()
+        stopEmote()
+    end)
+
+    -- === Draggable GUI ===
+    local gui = Instance.new("ScreenGui", plr:WaitForChild("PlayerGui"))
+    gui.ResetOnSpawn = false
+
+    local frame = Instance.new("Frame", gui)
+    frame.Size = UDim2.new(0, 220, 0, 120)
+    frame.Position = UDim2.new(0.5, -110, 0.5, -60)
+    frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    frame.Active = true
+    frame.Draggable = true -- draggable frame
+
+    -- Play button
+    local playBtn = Instance.new("TextButton", frame)
+    playBtn.Size = UDim2.new(1, -20, 0, 40)
+    playBtn.Position = UDim2.new(0, 10, 0, 10)
+    playBtn.Text = "Play "..EMOTE_LABEL
+    playBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+    playBtn.TextColor3 = Color3.new(1, 1, 1)
+    playBtn.Font = Enum.Font.SourceSansBold
+    playBtn.TextSize = 22
+    playBtn.MouseButton1Click:Connect(function()
+        playStickyEmote(EMOTE_LABEL, EMOTE_ID)
+    end)
+
+    -- Stop button
+    local stopBtn = Instance.new("TextButton", frame)
+    stopBtn.Size = UDim2.new(1, -20, 0, 40)
+    stopBtn.Position = UDim2.new(0, 10, 0, 60)
+    stopBtn.Text = "Stop "..EMOTE_LABEL
+    stopBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+    stopBtn.TextColor3 = Color3.new(1, 1, 1)
+    stopBtn.Font = Enum.Font.SourceSansBold
+    stopBtn.TextSize = 22
+    stopBtn.MouseButton1Click:Connect(stopEmote)
+end
