@@ -1,0 +1,26 @@
+local VirtualUser = game:GetService('VirtualUser')
+
+game:GetService('Players').LocalPlayer.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
+end)
+
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "Script anti afk loaded!",
+    Text = "Made by Jonash",
+    Button1 = "Ok!",
+    Duration = 5
+})
+local VirtualUser = game:GetService('VirtualUser')
+
+game:GetService('Players').LocalPlayer.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
+end)
+
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "AntiAFK loaded!",
+    Text = "Use it with caution",
+    Button1 = "Alrighty mighty",
+    Duration = 5
+})
