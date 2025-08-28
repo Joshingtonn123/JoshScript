@@ -1,0 +1,48 @@
+local Players = game:GetService("Players")
+local plr = Players.LocalPlayer
+local char = plr.Character or plr.CharacterAdded:Wait()
+local humanoid = char:WaitForChild("Humanoid")
+
+local EMOTE_LABEL = "Farming Aura"
+local EMOTE_ID    = 80310147207105
+
+-- Create GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = plr:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 150, 0, 50)
+button.Position = UDim2.new(0.5, -75, 0.8, 0)
+button.Text = EMOTE_LABEL
+button.BackgroundColor3 = Color3.fromRGB(40, 170, 255)
+button.TextScaled = true
+button.Parent = screenGui
+button.Active = true
+button.Draggable = true -- Draggable button
+
+-- State tracking
+local isPlaying = false
+local currentTrack
+
+-- Toggle emote function
+local function toggleEmote()
+	if not isPlaying then
+		local animation = Instance.new("Animation")
+		animation.AnimationId = "rbxassetid://" .. EMOTE_ID
+		currentTrack = humanoid:LoadAnimation(animation)
+		currentTrack.Looped = true -- makes the animation loop forever
+		currentTrack:Play()
+		isPlaying = true
+		button.Text = "Stop " .. EMOTE_LABEL
+	else
+		if currentTrack then
+			currentTrack:Stop()
+			currentTrack:Destroy()
+		end
+		isPlaying = false
+		button.Text = EMOTE_LABEL
+	end
+end
+
+-- Button click
+button.MouseButton1Click:Connect(toggleEmote)
