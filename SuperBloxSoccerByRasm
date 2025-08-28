@@ -1,0 +1,164 @@
+-- Super Blox Soccer | By Rasm (Custom GUI, Mobile + PC)
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local Minimize = Instance.new("TextButton")
+local Close = Instance.new("TextButton")
+local MiscText = Instance.new("TextLabel")
+local dragging, dragInput, dragStart, startPos
+
+ScreenGui.Name = "SuperBloxSoccerGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game.CoreGui
+
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 400, 0, 370)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -185)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+Title.Name = "Title"
+Title.Text = "Super Blox Soccer | By Rasm"
+Title.Size = UDim2.new(1, -60, 0, 30)
+Title.Position = UDim2.new(0, 10, 0, 5)
+Title.BackgroundTransparency = 1
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 20
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = MainFrame
+
+Minimize.Name = "Minimize"
+Minimize.Text = "-"
+Minimize.Size = UDim2.new(0, 25, 0, 25)
+Minimize.Position = UDim2.new(1, -55, 0, 5)
+Minimize.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Minimize.TextColor3 = Color3.fromRGB(255, 255, 255)
+Minimize.Font = Enum.Font.SourceSansBold
+Minimize.TextSize = 20
+Minimize.Parent = MainFrame
+
+Close.Name = "Close"
+Close.Text = "X"
+Close.Size = UDim2.new(0, 25, 0, 25)
+Close.Position = UDim2.new(1, -30, 0, 5)
+Close.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Close.TextColor3 = Color3.fromRGB(255, 100, 100)
+Close.Font = Enum.Font.SourceSansBold
+Close.TextSize = 18
+Close.Parent = MainFrame
+
+MiscText.Name = "MiscText"
+MiscText.Text = "Use Antikick Script Before Executing"
+MiscText.Size = UDim2.new(1, -20, 0, 25)
+MiscText.Position = UDim2.new(0, 10, 0, 40)
+MiscText.BackgroundTransparency = 1
+MiscText.TextColor3 = Color3.fromRGB(255, 255, 255)
+MiscText.Font = Enum.Font.SourceSans
+MiscText.TextSize = 16
+MiscText.TextWrapped = true
+MiscText.Parent = MainFrame
+
+-- Utility for creating buttons
+local function createButton(text, posY, callback)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, -20, 0, 30)
+	btn.Position = UDim2.new(0, 10, 0, posY)
+	btn.Text = text
+	btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Font = Enum.Font.SourceSans
+	btn.TextSize = 16
+	btn.Parent = MainFrame
+	btn.MouseButton1Click:Connect(callback)
+end
+
+-- Buttons + Scripts
+createButton("OP GUI REVAMP AND LEGACY BY FLEXA", 75, function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/ryte-e/Scripts/refs/heads/main/Sbs/Epl%C4%B0DK"))()
+end)
+
+createButton("SIMPLY BALL HBE FOR LEGACY ONLY", 110, function()
+	game.ReplicatedStorage.PrivateServerRemotes.ls.Value = true
+	game.ReplicatedStorage.AntiCheatTrigger:Destroy()
+	local Ball_Size = Vector3.new(1000, 500, 2)
+	workspace.ChildAdded:Connect(function(child)
+		if child.Name == "Ball" then
+			child.Size = Ball_Size
+		end
+	end)
+end)
+
+createButton("OP GAXIFY LEGACY AND REVAMP SCRIPT", 145, function()
+	loadstring(game:HttpGet("https://rawscripts.net/raw/Super-Blox-Soccer-anticheat-bypass-hbe-script-made-by-gax-free-version-42003"))()
+end)
+
+createButton("ANTI KICK SCRIPT", 180, function()
+	loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-AntiKick-Script-41724"))()
+end)
+
+createButton("(PATCHED!) OP EXTRAME GUI BEST", 215, function()
+	loadstring(game:HttpGet("https://rawscripts.net/raw/REWORK-COMING-SOON-Super-Blox-Soccer-op-script-8127"))()
+end)
+
+createButton("OP POWERSHOT AND MORE (LEGACY)", 250, function()
+	loadstring(game:HttpGet("https://rawscripts.net/raw/Super-Blox-Soccer-op-script-PC-VERSION-34569"))()
+end)
+
+-- Dragging support for mobile and PC
+local function dragify(frame)
+	local UIS = game:GetService("UserInputService")
+	local dragging, dragInput, dragStart, startPos
+
+	local function update(input)
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+
+	frame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = frame.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	frame.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			dragInput = input
+		end
+	end)
+
+	UIS.InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			update(input)
+		end
+	end)
+end
+
+dragify(MainFrame)
+
+-- Minimize button behavior
+Minimize.MouseButton1Click:Connect(function()
+	for _, child in ipairs(MainFrame:GetChildren()) do
+		if child:IsA("TextButton") or child:IsA("TextLabel") then
+			if child.Name ~= "Title" and child.Name ~= "Minimize" and child.Name ~= "Close" then
+				child.Visible = not child.Visible
+			end
+		end
+	end
+end)
+
+-- Close button
+Close.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
+end)
