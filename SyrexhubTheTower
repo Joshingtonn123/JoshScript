@@ -1,0 +1,110 @@
+--// The Tower - ESP Only
+--// Custom ESP by Syrex
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+
+-- GUI
+local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+ScreenGui.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 200, 0, 80)
+MainFrame.Position = UDim2.new(0.35, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1, 0, 0, 25)
+Title.Text = "The Tower - ESP"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.BackgroundColor3 = Color3.fromRGB(40,40,40)
+
+local ESPButton = Instance.new("TextButton", MainFrame)
+ESPButton.Size = UDim2.new(1, -20, 0, 30)
+ESPButton.Position = UDim2.new(0, 10, 0, 40)
+ESPButton.Text = "ESP: OFF"
+ESPButton.BackgroundColor3 = Color3.fromRGB(60,60,60)
+ESPButton.TextColor3 = Color3.new(1,1,1)
+
+-- ESP
+local espEnabled = false
+local Drawings = {}
+
+local function drawESP(plr)
+    if plr == LocalPlayer then return end
+    if Drawings[plr] then return end
+
+    local Box = Drawing.new("Square")
+    Box.Color = Color3.new(1,1,1)
+    Box.Thickness = 1
+    Box.Filled = false
+    Box.Visible = false
+
+    local Tracer = Drawing.new("Line")
+    Tracer.Color = Color3.new(1,1,1)
+    Tracer.Thickness = 1
+    Tracer.Visible = false
+
+    Drawings[plr] = {Box=Box,Tracer=Tracer}
+end
+
+local function clearESP()
+    for _, d in pairs(Drawings) do
+        if d.Box then d.Box:Remove() end
+        if d.Tracer then d.Tracer:Remove() end
+    end
+    table.clear(Drawings)
+end
+
+ESPButton.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    ESPButton.Text = espEnabled and "ESP: ON" or "ESP: OFF"
+    if not espEnabled then
+        clearESP()
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not espEnabled then return end
+
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
+            if not Drawings[plr] then drawESP(plr) end
+            local head = plr.Character.Head
+            local root = plr.Character:FindFirstChild("HumanoidRootPart")
+
+            if root then
+                local headPos, headVis = Camera:WorldToViewportPoint(head.Position)
+                local legPos = Camera:WorldToViewportPoint(root.Position - Vector3.new(0,3,0))
+                local hrpPos, vis = Camera:WorldToViewportPoint(root.Position)
+
+                if vis and headVis then
+                    local boxHeight = (headPos.Y - legPos.Y)
+                    local boxWidth = boxHeight / 2
+
+                    local Box = Drawings[plr].Box
+                    Box.Size = Vector2.new(boxWidth, boxHeight)
+                    Box.Position = Vector2.new(hrpPos.X - boxWidth/2, headPos.Y)
+                    Box.Visible = true
+
+                    local Tracer = Drawings[plr].Tracer
+                    Tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+                    Tracer.To = Vector2.new(hrpPos.X, hrpPos.Y)
+                    Tracer.Visible = true
+                else
+                    Drawings[plr].Box.Visible = false
+                    Drawings[plr].Tracer.Visible = false
+                end
+            end
+        else
+            if Drawings[plr] then
+                Drawings[plr].Box.Visible = false
+                Drawings[plr].Tracer.Visible = false
+            end
+        end
+    end
+end)
