@@ -1,0 +1,273 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+-- ===== ScreenGui / Main Frame =====
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SyrexHubGUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 360, 0, 420)
+mainFrame.Position = UDim2.new(0.5, -180, 0.5, -210) -- centered
+mainFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+mainFrame.BackgroundTransparency = 0.3
+mainFrame.BorderSizePixel = 0
+mainFrame.Visible = false -- hide until animation finishes
+mainFrame.Parent = screenGui
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 14)
+
+-- ===== Title Bar =====
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 44)
+titleBar.BackgroundTransparency = 1
+titleBar.Parent = mainFrame
+titleBar.Active = true
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "TitleLabel"
+titleLabel.Size = UDim2.new(1, -100, 1, 0)
+titleLabel.Position = UDim2.new(0, 12, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = ""
+titleLabel.TextColor3 = Color3.fromRGB(255,255,255)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 20
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.TextYAlignment = Enum.TextYAlignment.Center
+titleLabel.Parent = titleBar
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0,34,0,34)
+closeBtn.Position = UDim2.new(1, -42, 0, 5)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200,60,60)
+closeBtn.Text = "X"
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 18
+closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
+closeBtn.Parent = titleBar
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,8)
+closeBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+end)
+
+-- ===== Tab Section =====
+local tabSection = Instance.new("Frame")
+tabSection.Size = UDim2.new(0, 120, 1, -44)
+tabSection.Position = UDim2.new(0, 0, 0, 44)
+tabSection.BackgroundColor3 = Color3.fromRGB(50,50,50)
+tabSection.BackgroundTransparency = 0.8
+tabSection.Parent = mainFrame
+Instance.new("UICorner", tabSection).CornerRadius = UDim.new(0,10)
+
+local tabList = Instance.new("UIListLayout", tabSection)
+tabList.Padding = UDim.new(0, 12)
+tabList.FillDirection = Enum.FillDirection.Vertical
+tabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+tabList.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- ===== Tab Container =====
+local tabContainer = Instance.new("Frame")
+tabContainer.Size = UDim2.new(1, -140, 1, -44)
+tabContainer.Position = UDim2.new(0, 140, 0, 44)
+tabContainer.BackgroundTransparency = 1
+tabContainer.Parent = mainFrame
+
+-- ===== Tabs Table =====
+local Tabs = {}
+
+-- ===== Dragging =====
+do
+    local dragging, dragInput, dragStart, startPos = false, nil, Vector2.new(), mainFrame.Position
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging, dragInput, dragStart, startPos = true, input, input.Position, mainFrame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging, dragInput = false, nil end
+            end)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) and input==dragInput then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+delta.X, startPos.Y.Scale, startPos.Y.Offset+delta.Y)
+        end
+    end)
+end
+
+-- ===== Name Intro Animation =====
+do
+    local hubName = "Syrexhub"
+    local spreadName = "Ｓｙｒｅｘｈｕｂ"
+    local introLabel = Instance.new("TextLabel")
+    introLabel.Size = UDim2.new(1,0,1,0)
+    introLabel.BackgroundTransparency = 1
+    introLabel.Text = ""
+    introLabel.TextColor3 = Color3.fromRGB(255,255,255)
+    introLabel.Font = Enum.Font.GothamBlack
+    introLabel.TextSize = 60
+    introLabel.TextStrokeTransparency = 0.6
+    introLabel.Parent = screenGui
+
+    task.spawn(function()
+        for i = 1,#hubName do
+            introLabel.Text = hubName:sub(1,i)
+            task.wait(0.1)
+        end
+        task.wait(0.4)
+        introLabel.Text = spreadName
+        task.wait(0.8)
+
+        TweenService:Create(introLabel, TweenInfo.new(0.6), {TextTransparency=1}):Play()
+        task.wait(0.6)
+        introLabel:Destroy()
+
+        mainFrame.Visible = true
+        local target = UDim2.new(0.5, -180, 0.5, -210)
+        TweenService:Create(mainFrame, TweenInfo.new(0.48, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position=target}):Play()
+
+        local spaced = table.concat(string.split("Syrex Hub",""), " ")
+        local displayed = ""
+        for i = 1,#spaced do
+            displayed = spaced:sub(1,i)
+            titleLabel.Text = displayed
+            task.wait(0.045)
+        end
+    end)
+end
+
+-- ===== Library Functions =====
+local Library = {}
+
+function Library:CreateTab(tabName)
+    local tabFrame = Instance.new("ScrollingFrame")
+    tabFrame.Size = UDim2.new(1,0,1,0)
+    tabFrame.BackgroundTransparency = 1
+    tabFrame.ScrollBarThickness = 6
+    tabFrame.Visible = false
+    tabFrame.Parent = tabContainer
+
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 6)
+    layout.FillDirection = Enum.FillDirection.Vertical
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = tabFrame
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.9,0,0,34)
+    btn.Position = UDim2.new(0.05,0,0,0)
+    btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    btn.Text = tabName
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 16
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Parent = tabSection
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+
+    btn.MouseButton1Click:Connect(function()
+        for _,c in pairs(tabContainer:GetChildren()) do
+            if c:IsA("ScrollingFrame") then c.Visible=false end
+        end
+        tabFrame.Visible = true
+    end)
+
+    Tabs[tabName] = {Frame=tabFrame, Layout=layout}
+
+    local TabAPI = {}
+
+    function TabAPI:CreateButton(name, callback)
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(0.95,0,0,34)
+        b.BackgroundColor3 = Color3.fromRGB(60,60,60)
+        b.Text = name
+        b.Font = Enum.Font.Gotham
+        b.TextSize = 16
+        b.TextColor3 = Color3.fromRGB(255,255,255)
+        b.Parent = tabFrame
+        Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
+        b.MouseButton1Click:Connect(callback)
+        tabFrame.CanvasSize = UDim2.new(0,0,0,tabFrame.Layout.AbsoluteContentSize.Y+6)
+        return b
+    end
+
+    function TabAPI:CreateToggle(name, callback)
+        local t = Instance.new("TextButton")
+        t.Size = UDim2.new(0.95,0,0,34)
+        t.BackgroundColor3 = Color3.fromRGB(100,100,100)
+        t.Text = name.." [OFF]"
+        t.Font = Enum.Font.Gotham
+        t.TextSize = 16
+        t.TextColor3 = Color3.fromRGB(255,255,255)
+        t.Parent = tabFrame
+        Instance.new("UICorner", t).CornerRadius = UDim.new(0,8)
+        local state=false
+        t.MouseButton1Click:Connect(function()
+            state = not state
+            t.Text = name.." ["..(state and "ON" or "OFF").."]"
+            pcall(callback,state)
+        end)
+        tabFrame.CanvasSize = UDim2.new(0,0,0,tabFrame.Layout.AbsoluteContentSize.Y+6)
+        return t
+    end
+
+    function TabAPI:CreateSlider(minVal,maxVal,callback)
+        minVal=minVal or 0 maxVal=maxVal or 100
+        local sliderContainer = Instance.new("Frame")
+        sliderContainer.Size = UDim2.new(0.95,0,0,34)
+        sliderContainer.BackgroundTransparency=1
+        sliderContainer.Parent=tabFrame
+
+        local bg=Instance.new("Frame")
+        bg.Size=UDim2.new(1,0,1,0)
+        bg.BackgroundColor3=Color3.fromRGB(100,100,100)
+        bg.Parent=sliderContainer
+        Instance.new("UICorner",bg).CornerRadius=UDim.new(0,8)
+
+        local fill=Instance.new("Frame")
+        fill.Size=UDim2.new(0,0,1,0)
+        fill.BackgroundColor3=Color3.fromRGB(0,200,120)
+        fill.Parent=bg
+        Instance.new("UICorner",fill).CornerRadius=UDim.new(0,8)
+
+        local dragging, currentInput=false,nil
+        local function update(pos)
+            local absPos, absSize=bg.AbsolutePosition,bg.AbsoluteSize
+            if absSize.X<=0 then return end
+            local relativeX=math.clamp(pos.X-absPos.X,0,absSize.X)
+            local ratio=relativeX/absSize.X
+            fill.Size=UDim2.new(ratio,0,1,0)
+            local val=minVal+(maxVal-minVal)*ratio
+            if callback then pcall(callback,val) end
+        end
+
+        bg.InputBegan:Connect(function(input)
+            if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+                dragging,currentInput=true,input
+                update(input.Position)
+                input.Changed:Connect(function()
+                    if input.UserInputState==Enum.UserInputState.End then dragging,currentInput=false,nil end
+                end)
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) and input==currentInput then
+                update(input.Position)
+            end
+        end)
+
+        tabFrame.CanvasSize = UDim2.new(0,0,0,tabFrame.Layout.AbsoluteContentSize.Y+6)
+        return {set=function(v)
+            local ratio=math.clamp((v-minVal)/(maxVal-minVal),0,1)
+            fill.Size=UDim2.new(ratio,0,1,0)
+        end}
+    end
+
+    return TabAPI
+end
+
+return Library
