@@ -6,7 +6,6 @@ end
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -28,7 +27,7 @@ local Settings = {
 local SpeedEnabled = false
 local SpeedValue = 16
 
--- Draggable
+-- Draggable function
 local function MakeDraggable(topbar, frame)
     local Dragging, DragInput, DragStart, StartPos
     local function Update(input)
@@ -128,10 +127,10 @@ function Tabs:createTab(name)
     local TabContent = Instance.new("Frame", Content)
     TabContent.Size = UDim2.new(1,0,1,0)
     TabContent.BackgroundTransparency = 1
-    TabContent.Visible = true -- first tab default
+    TabContent.Visible = true
     TabContent.LayoutOrder = #Content:GetChildren()
 
-    -- Add helper functions for this tab
+    -- Helper functions
     function TabContent:createButton(text, callback)
         local Btn = Instance.new("TextButton", self)
         Btn.Size = UDim2.new(0.9,0,0,36)
@@ -198,7 +197,6 @@ function Tabs:createTab(name)
         end)
     end
 
-    -- **KEYBIND**
     function TabContent:createKeybind(text, defaultKey, callback)
         local KeybindFrame = Instance.new("Frame", self)
         KeybindFrame.Size = UDim2.new(0.9,0,0,36)
@@ -276,9 +274,25 @@ Tab1:createSlider("WalkSpeed Value", 0.5, function(value)
     end
 end)
 
--- Add keybind (open/close GUI)
-Tab1:createKeybind("Toggle GUI", Settings.CloseBind, function()
-    Gui.Enabled = not Gui.Enabled
+-- **GUI Toggle Keybind (works perfectly)**
+local GuiKey = Settings.CloseBind
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == GuiKey then
+        Gui.Enabled = not Gui.Enabled
+    end
+end)
+
+-- Close / Minimize buttons
+CloseBtn.MouseButton1Click:Connect(function()
+    Gui.Enabled = false
+end)
+
+local minimized = false
+MinBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    Content.Visible = not minimized
+    MainFrame.Size = minimized and UDim2.new(0,260,0,34) or UDim2.new(0,520,0,340)
 end)
 
 -- Make draggable
