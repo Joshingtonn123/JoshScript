@@ -1,4 +1,4 @@
--- Syrex UI Library with Floating Tabs + Tab-level Keybinds
+-- Syrex UI Library - Floating Tabs with CreateTab / AddButton / AddToggle / AddSlider / CreateKeybind
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -19,52 +19,6 @@ local Theme = {
     Text = Color3.fromRGB(255,255,255),
 }
 
--- Settings
-local Settings = {
-    CloseBind = Enum.KeyCode.RightControl,
-}
-
--- WalkSpeed
-local SpeedEnabled = false
-local SpeedValue = 16
-
--- Draggable function
-local function MakeDraggable(topbar, frame)
-    local Dragging, DragInput, DragStart, StartPos
-    local function Update(input)
-        local Delta = input.Position - DragStart
-        local Pos = UDim2.new(
-            StartPos.X.Scale,
-            StartPos.X.Offset + Delta.X,
-            StartPos.Y.Scale,
-            StartPos.Y.Offset + Delta.Y
-        )
-        TweenService:Create(frame, TweenInfo.new(0.12), {Position = Pos}):Play()
-    end
-    topbar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true
-            DragStart = input.Position
-            StartPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    Dragging = false
-                end
-            end)
-        end
-    end)
-    topbar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            DragInput = input
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if input == DragInput and Dragging then
-            Update(input)
-        end
-    end)
-end
-
 -- ScreenGui
 local Gui = Instance.new("ScreenGui")
 Gui.Name = "SyrexUILib"
@@ -80,58 +34,13 @@ MainFrame.Active = true
 MainFrame.Parent = Gui
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,6)
 
--- Tab Frame
+-- Tab Frame (Floating)
 local TabFrame = Instance.new("Frame")
 TabFrame.Size = UDim2.new(0, 100, 0, 340)
 TabFrame.Position = UDim2.new(0.5, -370, 0.5, -170)
 TabFrame.BackgroundColor3 = Theme.Background
 TabFrame.Parent = Gui
 Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,6)
-
--- Floating offset system
-local independent = false
-local defaultOffset = Vector2.new(-110, 0)
-local function getOffset()
-    return Vector2.new(
-        TabFrame.AbsolutePosition.X - MainFrame.AbsolutePosition.X,
-        TabFrame.AbsolutePosition.Y - MainFrame.AbsolutePosition.Y
-    )
-end
-local tabOffset = getOffset()
-
-RunService.RenderStepped:Connect(function()
-    if not independent then
-        local newPos = Vector2.new(
-            MainFrame.AbsolutePosition.X + tabOffset.X,
-            MainFrame.AbsolutePosition.Y + tabOffset.Y
-        )
-        TabFrame.Position = UDim2.fromOffset(newPos.X, newPos.Y)
-    end
-end)
-
-TabFrame:GetPropertyChangedSignal("Position"):Connect(function()
-    if independent then
-        tabOffset = getOffset()
-    end
-end)
-
-TabFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        independent = true
-    end
-end)
-
-local lastClick = 0
-TabFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        local now = tick()
-        if now - lastClick < 0.3 then
-            independent = false
-            tabOffset = defaultOffset
-        end
-        lastClick = now
-    end
-end)
 
 -- TopBar
 local TopBar = Instance.new("Frame", MainFrame)
@@ -168,159 +77,235 @@ MinBtn.TextColor3 = Theme.Text
 MinBtn.TextSize = 18
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0,6)
 
--- Content Frames
-local Contents = {}
-for i=1,2 do
-    local frame = Instance.new("Frame", MainFrame)
-    frame.Size = UDim2.new(1,-24,1,-56)
-    frame.Position = UDim2.new(0,12,0,44)
-    frame.BackgroundTransparency = 1
-    frame.Visible = (i==1)
-    table.insert(Contents, frame)
-end
-
--- Tab Buttons
-local Tabs = {}
-for i=1,2 do
-    local btn = Instance.new("TextButton", TabFrame)
-    btn.Size = UDim2.new(1,-10,0,40)
-    btn.Position = UDim2.new(0,5,0,20 + (i-1)*50)
-    btn.BackgroundColor3 = Theme.Section
-    btn.Font = Enum.Font.SourceSansBold
-    btn.TextColor3 = Theme.Text
-    btn.TextSize = 16
-    btn.Text = "Tab "..i
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
-    btn.MouseButton1Click:Connect(function()
-        for j,frame in ipairs(Contents) do
-            frame.Visible = (i==j)
-        end
-        for _,b in ipairs(TabFrame:GetChildren()) do
-            if b:IsA("TextButton") then
-                b.BackgroundColor3 = (b==btn) and Theme.Element or Theme.Section
-            end
-        end
-    end)
-    if i==1 then btn.BackgroundColor3 = Theme.Element end
-    table.insert(Tabs, {Button=btn, Content=Contents[i], Keybinds={}})
-end
-
--- Feature functions
-local function createButton(parent, text, callback)
-    local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(0.9,0,0,36)
-    btn.Position = UDim2.new(0,0,0,#parent:GetChildren()*40)
-    btn.BackgroundColor3 = Theme.Section
-    btn.Font = Enum.Font.SourceSansBold
-    btn.TextColor3 = Theme.Text
-    btn.TextSize = 18
-    btn.Text = text
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
-    btn.MouseButton1Click:Connect(callback)
-end
-
-local function createToggle(parent, text, default, callback)
-    local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(0.9,0,0,36)
-    btn.Position = UDim2.new(0,0,0,#parent:GetChildren()*40)
-    btn.BackgroundColor3 = default and Theme.Element or Theme.Section
-    btn.Font = Enum.Font.SourceSansBold
-    btn.TextColor3 = Theme.Text
-    btn.TextSize = 18
-    btn.Text = text..": "..(default and "ON" or "OFF")
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
-    local state = default
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        btn.BackgroundColor3 = state and Theme.Element or Theme.Section
-        btn.Text = text..": "..(state and "ON" or "OFF")
-        callback(state)
-    end)
-end
-
-local function createKeybind(tab, text, defaultKey, callback)
-    local parent = tab.Content
-    local frame = Instance.new("Frame", parent)
-    frame.Size = UDim2.new(0.9,0,0,36)
-    frame.Position = UDim2.new(0,0,0,#parent:GetChildren()*40)
-    frame.BackgroundTransparency = 1
-
-    local label = Instance.new("TextLabel", frame)
-    label.Size = UDim2.new(0.6,0,1,0)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Theme.Text
-    label.Font = Enum.Font.SourceSans
-    label.TextSize = 14
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Text = text..": "..tostring(defaultKey)
-
-    local btn = Instance.new("TextButton", frame)
-    btn.Size = UDim2.new(0.36,0,1,0)
-    btn.Position = UDim2.new(0.62,0,0,0)
-    btn.BackgroundColor3 = Theme.Element
-    btn.Text = "Set Key"
-    btn.TextColor3 = Theme.Text
-    btn.Font = Enum.Font.SourceSansBold
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
-
-    local Key = defaultKey
-
-    btn.MouseButton1Click:Connect(function()
-        btn.Text = "Press a key..."
-        local conn
-        conn = UserInputService.InputBegan:Connect(function(input, gp)
-            if gp then return end
-            if input.UserInputType==Enum.UserInputType.Keyboard then
-                Key = input.KeyCode
-                label.Text = text..": "..tostring(Key)
-                btn.Text = "Set Key"
-                conn:Disconnect()
-            end
-        end)
-        delay(8,function() if conn and conn.Connected then conn:Disconnect(); btn.Text="Set Key" end end)
-    end)
-
-    -- Listen for key
-    UserInputService.InputBegan:Connect(function(input, gp)
-        if gp then return end
-        if input.KeyCode == Key then
-            callback()
-        end
-    end)
-end
-
--- Example usage for Tab1
-local Tab1 = Tabs[1]
-createButton(Tab1.Content, "Load Infinite Yield", function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
-end)
-createToggle(Tab1.Content, "WalkSpeed", false, function(state)
-    SpeedEnabled = state
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = state and SpeedValue or 16
+-- Make draggable function
+local function MakeDraggable(topbar, frame)
+    local Dragging, DragInput, DragStart, StartPos
+    local function Update(input)
+        local Delta = input.Position - DragStart
+        local Pos = UDim2.new(
+            StartPos.X.Scale,
+            StartPos.X.Offset + Delta.X,
+            StartPos.Y.Scale,
+            StartPos.Y.Offset + Delta.Y
+        )
+        TweenService:Create(frame, TweenInfo.new(0.12), {Position = Pos}):Play()
     end
-end)
-createKeybind(Tab1, "Test Feature", Enum.KeyCode.F, function()
-    print("Tab1 feature key pressed!")
-end)
+    topbar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            Dragging = true
+            DragStart = input.Position
+            StartPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    Dragging = false
+                end
+            end)
+        end
+    end)
+    topbar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            DragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == DragInput and Dragging then
+            Update(input)
+        end
+    end)
+end
 
--- GUI toggle (always works)
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    if input.KeyCode == Settings.CloseBind then
-        Gui.Enabled = not Gui.Enabled
-    end
-end)
+MakeDraggable(TopBar, MainFrame)
+MakeDraggable(TabFrame, TabFrame)
 
--- Close / Minimize
+-- Minimize / Close
+local minimized = false
 CloseBtn.MouseButton1Click:Connect(function()
     Gui.Enabled = false
 end)
 MinBtn.MouseButton1Click:Connect(function()
-    for _,c in ipairs(Contents) do c.Visible = not c.Visible end
-    MainFrame.Size = MainFrame.Size == UDim2.new(0,520,0,340) and UDim2.new(0,260,0,34) or UDim2.new(0,520,0,340)
+    minimized = not minimized
+    for _, f in pairs(MainFrame:GetChildren()) do
+        if f:IsA("Frame") and f ~= TopBar then
+            f.Visible = not minimized
+        end
+    end
+    MainFrame.Size = minimized and UDim2.new(0,260,0,34) or UDim2.new(0,520,0,340)
 end)
 
--- Make draggable
-MakeDraggable(TopBar, MainFrame)
-MakeDraggable(TabFrame, TabFrame)
+-- Tabs system
+local SyrexUI = {}
+SyrexUI.Tabs = {}
+SyrexUI.TabButtons = {}
+SyrexUI.ContentFrames = {}
+SyrexUI.CurrentTab = nil
+
+function SyrexUI:CreateTab(name)
+    local btn = Instance.new("TextButton", TabFrame)
+    btn.Size = UDim2.new(1, -10, 0, 40)
+    btn.Position = UDim2.new(0,5,0,#self.TabButtons*50+20)
+    btn.BackgroundColor3 = Theme.Section
+    btn.Text = name
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextColor3 = Theme.Text
+    btn.TextSize = 16
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+
+    local frame = Instance.new("Frame", MainFrame)
+    frame.Size = UDim2.new(1,-24,1,-56)
+    frame.Position = UDim2.new(0,12,0,44)
+    frame.BackgroundTransparency = 1
+    frame.Visible = false
+
+    table.insert(self.TabButtons, btn)
+    table.insert(self.ContentFrames, frame)
+
+    btn.MouseButton1Click:Connect(function()
+        for i, f in pairs(self.ContentFrames) do
+            f.Visible = false
+            self.TabButtons[i].BackgroundColor3 = Theme.Section
+        end
+        frame.Visible = true
+        btn.BackgroundColor3 = Theme.Element
+        self.CurrentTab = frame
+    end)
+
+    if #self.TabButtons == 1 then
+        frame.Visible = true
+        btn.BackgroundColor3 = Theme.Element
+        self.CurrentTab = frame
+    end
+
+    local tabObj = {}
+    function tabObj:AddButton(text, callback)
+        local Btn = Instance.new("TextButton", frame)
+        Btn.Size = UDim2.new(0.9,0,0,36)
+        Btn.Position = UDim2.new(0,0,0,#frame:GetChildren()*40)
+        Btn.BackgroundColor3 = Theme.Section
+        Btn.Font = Enum.Font.SourceSansBold
+        Btn.TextColor3 = Theme.Text
+        Btn.TextSize = 18
+        Btn.Text = text
+        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0,6)
+        Btn.MouseButton1Click:Connect(callback)
+    end
+
+    function tabObj:AddToggle(text, default, callback)
+        local Tog = Instance.new("TextButton", frame)
+        Tog.Size = UDim2.new(0.9,0,0,36)
+        Tog.Position = UDim2.new(0,0,0,#frame:GetChildren()*40)
+        Tog.BackgroundColor3 = default and Theme.Element or Theme.Section
+        Tog.Font = Enum.Font.SourceSansBold
+        Tog.TextColor3 = Theme.Text
+        Tog.TextSize = 18
+        Tog.Text = text .. ": " .. (default and "ON" or "OFF")
+        Instance.new("UICorner", Tog).CornerRadius = UDim.new(0,6)
+
+        local state = default
+        Tog.MouseButton1Click:Connect(function()
+            state = not state
+            Tog.BackgroundColor3 = state and Theme.Element or Theme.Section
+            Tog.Text = text .. ": " .. (state and "ON" or "OFF")
+            callback(state)
+        end)
+    end
+
+    function tabObj:AddSlider(text, min, max, default, callback)
+        local SliderFrame = Instance.new("Frame", frame)
+        SliderFrame.Size = UDim2.new(0.9,0,0,32)
+        SliderFrame.Position = UDim2.new(0,0,0,#frame:GetChildren()*40)
+        SliderFrame.BackgroundTransparency = 1
+
+        local Bar = Instance.new("Frame", SliderFrame)
+        Bar.Size = UDim2.new(1,0,0,8)
+        Bar.Position = UDim2.new(0,0,0.5,-4)
+        Bar.BackgroundColor3 = Theme.Section
+        Instance.new("UICorner", Bar).CornerRadius = UDim.new(1,0)
+
+        local Fill = Instance.new("Frame", Bar)
+        Fill.Size = UDim2.new((default-min)/(max-min),0,1,0)
+        Fill.BackgroundColor3 = Theme.Element
+        Instance.new("UICorner", Fill).CornerRadius = UDim.new(1,0)
+
+        local dragging = false
+        local ValueLabel = Instance.new("TextLabel", SliderFrame)
+        ValueLabel.Position = UDim2.new(1, -50, 0, -4)
+        ValueLabel.Size = UDim2.new(0,50,1,0)
+        ValueLabel.BackgroundTransparency = 1
+        ValueLabel.TextColor3 = Theme.Text
+        ValueLabel.Font = Enum.Font.SourceSansBold
+        ValueLabel.TextSize = 14
+        ValueLabel.Text = tostring(default)
+
+        Bar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+            end
+        end)
+        Bar.InputEnded:Connect(function(input)
+            dragging = false
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local relX = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
+                Fill.Size = UDim2.new(relX,0,1,0)
+                local val = math.floor(min + relX*(max-min))
+                ValueLabel.Text = tostring(val)
+                callback(val)
+            end
+        end)
+    end
+
+    function tabObj:CreateKeybind(text, defaultKey, callback)
+        local KeybindFrame = Instance.new("Frame", frame)
+        KeybindFrame.Size = UDim2.new(0.9,0,0,36)
+        KeybindFrame.Position = UDim2.new(0,0,0,#frame:GetChildren()*40)
+        KeybindFrame.BackgroundTransparency = 1
+
+        local Label = Instance.new("TextLabel", KeybindFrame)
+        Label.Size = UDim2.new(0.6,0,1,0)
+        Label.Position = UDim2.new(0,0,0,0)
+        Label.BackgroundTransparency = 1
+        Label.Text = text .. ": " .. tostring(defaultKey)
+        Label.TextColor3 = Theme.Text
+        Label.Font = Enum.Font.SourceSans
+        Label.TextSize = 14
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+
+        local Btn = Instance.new("TextButton", KeybindFrame)
+        Btn.Size = UDim2.new(0.36,0,1,0)
+        Btn.Position = UDim2.new(0.62,0,0,0)
+        Btn.BackgroundColor3 = Theme.Element
+        Btn.TextColor3 = Theme.Text
+        Btn.Font = Enum.Font.SourceSansBold
+        Btn.Text = "Set Key"
+        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0,6)
+
+        local Key = defaultKey
+
+        Btn.MouseButton1Click:Connect(function()
+            Btn.Text = "Press a key..."
+            local conn
+            conn = UserInputService.InputBegan:Connect(function(input, gp)
+                if gp then return end
+                if input.UserInputType == Enum.UserInputType.Keyboard then
+                    Key = input.KeyCode
+                    Label.Text = text .. ": " .. tostring(Key)
+                    Btn.Text = "Set Key"
+                    conn:Disconnect()
+                end
+            end)
+        end)
+
+        -- Listen for keybind
+        UserInputService.InputBegan:Connect(function(input, gp)
+            if gp then return end
+            if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Key then
+                callback()
+            end
+        end)
+    end
+
+    return tabObj
+end
+
+return SyrexUI
