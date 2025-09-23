@@ -1,4 +1,4 @@
--- Syrex UI Library with Tabs, Buttons, Toggles, Sliders, and Keybinds
+-- Syrex UI Library with Floating Tabs + Tab-level Keybinds
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -6,6 +6,7 @@ end
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -23,7 +24,7 @@ local Settings = {
     CloseBind = Enum.KeyCode.RightControl,
 }
 
--- WalkSpeed vars
+-- WalkSpeed
 local SpeedEnabled = false
 local SpeedValue = 16
 
@@ -70,7 +71,7 @@ Gui.Name = "SyrexUILib"
 Gui.Parent = CoreGui
 Gui.ResetOnSpawn = false
 
--- Main Frame
+-- Main GUI
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 520, 0, 340)
 MainFrame.Position = UDim2.new(0.5, -260, 0.5, -170)
@@ -78,6 +79,59 @@ MainFrame.BackgroundColor3 = Theme.Background
 MainFrame.Active = true
 MainFrame.Parent = Gui
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,6)
+
+-- Tab Frame
+local TabFrame = Instance.new("Frame")
+TabFrame.Size = UDim2.new(0, 100, 0, 340)
+TabFrame.Position = UDim2.new(0.5, -370, 0.5, -170)
+TabFrame.BackgroundColor3 = Theme.Background
+TabFrame.Parent = Gui
+Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,6)
+
+-- Floating offset system
+local independent = false
+local defaultOffset = Vector2.new(-110, 0)
+local function getOffset()
+    return Vector2.new(
+        TabFrame.AbsolutePosition.X - MainFrame.AbsolutePosition.X,
+        TabFrame.AbsolutePosition.Y - MainFrame.AbsolutePosition.Y
+    )
+end
+local tabOffset = getOffset()
+
+RunService.RenderStepped:Connect(function()
+    if not independent then
+        local newPos = Vector2.new(
+            MainFrame.AbsolutePosition.X + tabOffset.X,
+            MainFrame.AbsolutePosition.Y + tabOffset.Y
+        )
+        TabFrame.Position = UDim2.fromOffset(newPos.X, newPos.Y)
+    end
+end)
+
+TabFrame:GetPropertyChangedSignal("Position"):Connect(function()
+    if independent then
+        tabOffset = getOffset()
+    end
+end)
+
+TabFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        independent = true
+    end
+end)
+
+local lastClick = 0
+TabFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local now = tick()
+        if now - lastClick < 0.3 then
+            independent = false
+            tabOffset = defaultOffset
+        end
+        lastClick = now
+    end
+end)
 
 -- TopBar
 local TopBar = Instance.new("Frame", MainFrame)
@@ -114,186 +168,159 @@ MinBtn.TextColor3 = Theme.Text
 MinBtn.TextSize = 18
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0,6)
 
--- Content Frame
-local Content = Instance.new("Frame", MainFrame)
-Content.Position = UDim2.new(0,12,0,44)
-Content.Size = UDim2.new(1,-24,1,-56)
-Content.BackgroundTransparency = 1
-
--- Tab System
-local Tabs = {}
-
-function Tabs:createTab(name)
-    local TabContent = Instance.new("Frame", Content)
-    TabContent.Size = UDim2.new(1,0,1,0)
-    TabContent.BackgroundTransparency = 1
-    TabContent.Visible = true
-    TabContent.LayoutOrder = #Content:GetChildren()
-
-    -- Helper functions
-    function TabContent:createButton(text, callback)
-        local Btn = Instance.new("TextButton", self)
-        Btn.Size = UDim2.new(0.9,0,0,36)
-        Btn.Position = UDim2.new(0,0,0,#self:GetChildren()*40)
-        Btn.BackgroundColor3 = Theme.Section
-        Btn.Font = Enum.Font.SourceSansBold
-        Btn.TextColor3 = Theme.Text
-        Btn.TextSize = 18
-        Btn.Text = text
-        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0,6)
-        Btn.MouseButton1Click:Connect(callback)
-    end
-
-    function TabContent:createToggle(text, default, callback)
-        local Tog = Instance.new("TextButton", self)
-        Tog.Size = UDim2.new(0.9,0,0,36)
-        Tog.Position = UDim2.new(0,0,0,#self:GetChildren()*40)
-        Tog.BackgroundColor3 = default and Theme.Element or Theme.Section
-        Tog.Font = Enum.Font.SourceSansBold
-        Tog.TextColor3 = Theme.Text
-        Tog.TextSize = 18
-        Tog.Text = text .. ": " .. (default and "ON" or "OFF")
-        Instance.new("UICorner", Tog).CornerRadius = UDim.new(0,6)
-
-        local state = default
-        Tog.MouseButton1Click:Connect(function()
-            state = not state
-            Tog.BackgroundColor3 = state and Theme.Element or Theme.Section
-            Tog.Text = text .. ": " .. (state and "ON" or "OFF")
-            callback(state)
-        end)
-    end
-
-    function TabContent:createSlider(text, default, callback)
-        local SliderFrame = Instance.new("Frame", self)
-        SliderFrame.Size = UDim2.new(0.9,0,0,32)
-        SliderFrame.Position = UDim2.new(0,0,0,#self:GetChildren()*40)
-        SliderFrame.BackgroundTransparency = 1
-
-        local Bar = Instance.new("Frame", SliderFrame)
-        Bar.Size = UDim2.new(default,0,0,8)
-        Bar.Position = UDim2.new(0,0,0.5,-4)
-        Bar.BackgroundColor3 = Theme.Section
-        Instance.new("UICorner", Bar).CornerRadius = UDim.new(1,0)
-
-        local Fill = Instance.new("Frame", Bar)
-        Fill.Size = UDim2.new(default,0,1,0)
-        Fill.BackgroundColor3 = Theme.Element
-        Instance.new("UICorner", Fill).CornerRadius = UDim.new(1,0)
-
-        local dragging = false
-        Bar.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-            end
-        end)
-        Bar.InputEnded:Connect(function(input) dragging = false end)
-        UserInputService.InputChanged:Connect(function(input)
-            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                local relX = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
-                Fill.Size = UDim2.new(relX,0,1,0)
-                callback(relX)
-            end
-        end)
-    end
-
-    function TabContent:createKeybind(text, defaultKey, callback)
-        local KeybindFrame = Instance.new("Frame", self)
-        KeybindFrame.Size = UDim2.new(0.9,0,0,36)
-        KeybindFrame.Position = UDim2.new(0,0,0,#self:GetChildren()*40)
-        KeybindFrame.BackgroundTransparency = 1
-
-        local Label = Instance.new("TextLabel", KeybindFrame)
-        Label.Size = UDim2.new(0.6,0,1,0)
-        Label.Position = UDim2.new(0,0,0,0)
-        Label.BackgroundTransparency = 1
-        Label.Text = text .. ": " .. tostring(defaultKey)
-        Label.TextColor3 = Theme.Text
-        Label.Font = Enum.Font.SourceSans
-        Label.TextSize = 14
-        Label.TextXAlignment = Enum.TextXAlignment.Left
-
-        local Btn = Instance.new("TextButton", KeybindFrame)
-        Btn.Size = UDim2.new(0.36,0,1,0)
-        Btn.Position = UDim2.new(0.62,0,0,0)
-        Btn.BackgroundColor3 = Theme.Element
-        Btn.TextColor3 = Theme.Text
-        Btn.Font = Enum.Font.SourceSansBold
-        Btn.Text = "Set Key"
-        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0,6)
-
-        local Key = defaultKey
-
-        Btn.MouseButton1Click:Connect(function()
-            Btn.Text = "Press a key..."
-            local conn
-            conn = UserInputService.InputBegan:Connect(function(input, gp)
-                if gp then return end
-                if input.UserInputType == Enum.UserInputType.Keyboard then
-                    Key = input.KeyCode
-                    Btn.Text = "Set Key"
-                    Label.Text = text .. ": " .. tostring(Key)
-                    conn:Disconnect()
-                end
-            end)
-        end)
-
-        -- Listen for key press
-        UserInputService.InputBegan:Connect(function(input, gp)
-            if gp then return end
-            if input.KeyCode == Key then
-                callback()
-            end
-        end)
-    end
-
-    return TabContent
+-- Content Frames
+local Contents = {}
+for i=1,2 do
+    local frame = Instance.new("Frame", MainFrame)
+    frame.Size = UDim2.new(1,-24,1,-56)
+    frame.Position = UDim2.new(0,12,0,44)
+    frame.BackgroundTransparency = 1
+    frame.Visible = (i==1)
+    table.insert(Contents, frame)
 end
 
--- Example Usage
-local Tab1 = Tabs:createTab("Main")
+-- Tab Buttons
+local Tabs = {}
+for i=1,2 do
+    local btn = Instance.new("TextButton", TabFrame)
+    btn.Size = UDim2.new(1,-10,0,40)
+    btn.Position = UDim2.new(0,5,0,20 + (i-1)*50)
+    btn.BackgroundColor3 = Theme.Section
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextColor3 = Theme.Text
+    btn.TextSize = 16
+    btn.Text = "Tab "..i
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+    btn.MouseButton1Click:Connect(function()
+        for j,frame in ipairs(Contents) do
+            frame.Visible = (i==j)
+        end
+        for _,b in ipairs(TabFrame:GetChildren()) do
+            if b:IsA("TextButton") then
+                b.BackgroundColor3 = (b==btn) and Theme.Element or Theme.Section
+            end
+        end
+    end)
+    if i==1 then btn.BackgroundColor3 = Theme.Element end
+    table.insert(Tabs, {Button=btn, Content=Contents[i], Keybinds={}})
+end
 
--- Add button
-Tab1:createButton("Load Infinite Yield", function()
+-- Feature functions
+local function createButton(parent, text, callback)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(0.9,0,0,36)
+    btn.Position = UDim2.new(0,0,0,#parent:GetChildren()*40)
+    btn.BackgroundColor3 = Theme.Section
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextColor3 = Theme.Text
+    btn.TextSize = 18
+    btn.Text = text
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+    btn.MouseButton1Click:Connect(callback)
+end
+
+local function createToggle(parent, text, default, callback)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(0.9,0,0,36)
+    btn.Position = UDim2.new(0,0,0,#parent:GetChildren()*40)
+    btn.BackgroundColor3 = default and Theme.Element or Theme.Section
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextColor3 = Theme.Text
+    btn.TextSize = 18
+    btn.Text = text..": "..(default and "ON" or "OFF")
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+    local state = default
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.BackgroundColor3 = state and Theme.Element or Theme.Section
+        btn.Text = text..": "..(state and "ON" or "OFF")
+        callback(state)
+    end)
+end
+
+local function createKeybind(tab, text, defaultKey, callback)
+    local parent = tab.Content
+    local frame = Instance.new("Frame", parent)
+    frame.Size = UDim2.new(0.9,0,0,36)
+    frame.Position = UDim2.new(0,0,0,#parent:GetChildren()*40)
+    frame.BackgroundTransparency = 1
+
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(0.6,0,1,0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Theme.Text
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 14
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Text = text..": "..tostring(defaultKey)
+
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(0.36,0,1,0)
+    btn.Position = UDim2.new(0.62,0,0,0)
+    btn.BackgroundColor3 = Theme.Element
+    btn.Text = "Set Key"
+    btn.TextColor3 = Theme.Text
+    btn.Font = Enum.Font.SourceSansBold
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+
+    local Key = defaultKey
+
+    btn.MouseButton1Click:Connect(function()
+        btn.Text = "Press a key..."
+        local conn
+        conn = UserInputService.InputBegan:Connect(function(input, gp)
+            if gp then return end
+            if input.UserInputType==Enum.UserInputType.Keyboard then
+                Key = input.KeyCode
+                label.Text = text..": "..tostring(Key)
+                btn.Text = "Set Key"
+                conn:Disconnect()
+            end
+        end)
+        delay(8,function() if conn and conn.Connected then conn:Disconnect(); btn.Text="Set Key" end end)
+    end)
+
+    -- Listen for key
+    UserInputService.InputBegan:Connect(function(input, gp)
+        if gp then return end
+        if input.KeyCode == Key then
+            callback()
+        end
+    end)
+end
+
+-- Example usage for Tab1
+local Tab1 = Tabs[1]
+createButton(Tab1.Content, "Load Infinite Yield", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
 end)
-
--- Add toggle
-Tab1:createToggle("WalkSpeed", false, function(state)
+createToggle(Tab1.Content, "WalkSpeed", false, function(state)
     SpeedEnabled = state
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
         LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = state and SpeedValue or 16
     end
 end)
-
--- Add slider
-Tab1:createSlider("WalkSpeed Value", 0.5, function(value)
-    SpeedValue = math.floor(value*100)
-    if SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = SpeedValue
-    end
+createKeybind(Tab1, "Test Feature", Enum.KeyCode.F, function()
+    print("Tab1 feature key pressed!")
 end)
 
--- **GUI Toggle Keybind (works perfectly)**
-local GuiKey = Settings.CloseBind
+-- GUI toggle (always works)
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
-    if input.KeyCode == GuiKey then
+    if input.KeyCode == Settings.CloseBind then
         Gui.Enabled = not Gui.Enabled
     end
 end)
 
--- Close / Minimize buttons
+-- Close / Minimize
 CloseBtn.MouseButton1Click:Connect(function()
     Gui.Enabled = false
 end)
-
-local minimized = false
 MinBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    Content.Visible = not minimized
-    MainFrame.Size = minimized and UDim2.new(0,260,0,34) or UDim2.new(0,520,0,340)
+    for _,c in ipairs(Contents) do c.Visible = not c.Visible end
+    MainFrame.Size = MainFrame.Size == UDim2.new(0,520,0,340) and UDim2.new(0,260,0,34) or UDim2.new(0,520,0,340)
 end)
 
 -- Make draggable
 MakeDraggable(TopBar, MainFrame)
+MakeDraggable(TabFrame, TabFrame)
