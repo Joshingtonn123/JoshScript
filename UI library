@@ -1,227 +1,238 @@
--- SyrexUILibrary.lua
-local SyrexUILibrary = {}
+-- SyrexUI Libraryh
+local SyrexUI = {}
+SyrexUI.__index = SyrexUI
 
-function SyrexUILibrary:CreateWindow(title)
-    local window = {}
-    window.Tabs = {}
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
-    -- Create the main frame
-    local Gui = Instance.new("ScreenGui")
-    Gui.Name = "SyrexUILib"
-    Gui.Parent = game:GetService("CoreGui")
-    Gui.ResetOnSpawn = false
+-- Theme
+SyrexUI.Theme = {
+    Background = Color3.fromRGB(9,9,13),
+    Section = Color3.fromRGB(0,20,40),
+    Element = Color3.fromRGB(61,133,224),
+    Text = Color3.fromRGB(255,255,255),
+}
 
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 520, 0, 340)
-    MainFrame.Position = UDim2.new(0.5, -260, 0.5, -170)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(9,9,13)
-    MainFrame.Active = true
-    MainFrame.Parent = Gui
-    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,6)
+-- ScreenGui
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "SyrexUILib"
+Gui.Parent = CoreGui
+Gui.ResetOnSpawn = false
 
-    -- TopBar + Title + Close Button
-    local TopBar = Instance.new("Frame", MainFrame)
-    TopBar.Size = UDim2.new(1,0,0,34)
-    TopBar.BackgroundTransparency = 1
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0,520,0,340)
+MainFrame.Position = UDim2.new(0.5,-260,0.5,-170)
+MainFrame.BackgroundColor3 = SyrexUI.Theme.Background
+MainFrame.Active = true
+MainFrame.Parent = Gui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,6)
 
-    local TitleLabel = Instance.new("TextLabel", TopBar)
-    TitleLabel.Size = UDim2.new(1,-80,1,0)
-    TitleLabel.Position = UDim2.new(0,12,0,0)
-    TitleLabel.BackgroundTransparency = 1
-    TitleLabel.Font = Enum.Font.FredokaOne
-    TitleLabel.Text = title or "Syrex UI Library"
-    TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
-    TitleLabel.TextSize = 20
-    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+-- Top Bar + Draggable
+local TopBar = Instance.new("Frame", MainFrame)
+TopBar.Size = UDim2.new(1,0,0,34)
+TopBar.BackgroundTransparency = 1
 
-    local CloseBtn = Instance.new("TextButton", TopBar)
-    CloseBtn.Size = UDim2.new(0,60,0,24)
-    CloseBtn.Position = UDim2.new(1,-70,0,5)
-    CloseBtn.BackgroundColor3 = Color3.fromRGB(0,20,40)
-    CloseBtn.Text = "Close"
-    CloseBtn.Font = Enum.Font.SourceSansBold
-    CloseBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    CloseBtn.TextSize = 14
-    Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0,6)
+local Title = Instance.new("TextLabel", TopBar)
+Title.Size = UDim2.new(1,-80,1,0)
+Title.Position = UDim2.new(0,12,0,0)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.FredokaOne
+Title.Text = "Syrex UI Library"
+Title.TextColor3 = SyrexUI.Theme.Text
+Title.TextSize = 20
+Title.TextXAlignment = Enum.TextXAlignment.Left
 
-    CloseBtn.MouseButton1Click:Connect(function()
-        Gui.Enabled = false
+-- Close Button
+local CloseBtn = Instance.new("TextButton", TopBar)
+CloseBtn.Size = UDim2.new(0,60,0,24)
+CloseBtn.Position = UDim2.new(1,-70,0,5)
+CloseBtn.BackgroundColor3 = SyrexUI.Theme.Section
+CloseBtn.Text = "Close"
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.TextColor3 = SyrexUI.Theme.Text
+CloseBtn.TextSize = 14
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0,6)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    Gui.Enabled = false
+end)
+
+-- Make Draggable
+local function MakeDraggable(topbar, frame)
+    local Dragging, DragInput, DragStart, StartPos
+    local function Update(input)
+        local Delta = input.Position - DragStart
+        frame.Position = UDim2.new(
+            StartPos.X.Scale, StartPos.X.Offset + Delta.X,
+            StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y
+        )
+    end
+    topbar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            Dragging = true
+            DragStart = input.Position
+            StartPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    Dragging = false
+                end
+            end)
+        end
     end)
-
-    -- Make draggable
-    local function MakeDraggable(topbar, frame)
-        local Dragging, DragInput, DragStart, StartPos
-        local function Update(input)
-            local Delta = input.Position - DragStart
-            local Pos = UDim2.new(
-                StartPos.X.Scale,
-                StartPos.X.Offset + Delta.X,
-                StartPos.Y.Scale,
-                StartPos.Y.Offset + Delta.Y
-            )
-            frame.Position = Pos
+    topbar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            DragInput = input
         end
-        topbar.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                Dragging = true
-                DragStart = input.Position
-                StartPos = frame.Position
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        Dragging = false
-                    end
-                end)
-            end
-        end)
-        topbar.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                DragInput = input
-            end
-        end)
-        game:GetService("UserInputService").InputChanged:Connect(function(input)
-            if input == DragInput and Dragging then
-                Update(input)
-            end
-        end)
-    end
-
-    MakeDraggable(TopBar, MainFrame)
-
-    -- Function to create tabs
-    function window:CreateTab(tabName)
-        local tab = {}
-        tab.Buttons = {}
-        tab.Toggles = {}
-        tab.Sliders = {}
-
-        -- Create the content frame
-        local ContentFrame = Instance.new("Frame", MainFrame)
-        ContentFrame.Size = UDim2.new(1,-24,1,-56)
-        ContentFrame.Position = UDim2.new(0,12,0,44)
-        ContentFrame.BackgroundTransparency = 1
-        ContentFrame.Visible = false
-
-        -- Tab Button
-        local TabButton = Instance.new("TextButton")
-        TabButton.Size = UDim2.new(1, -10, 0, 40)
-        TabButton.Position = UDim2.new(0,5,0,20 + (#window.Tabs*50))
-        TabButton.BackgroundColor3 = Color3.fromRGB(0,20,40)
-        TabButton.Text = tabName
-        TabButton.Font = Enum.Font.SourceSansBold
-        TabButton.TextColor3 = Color3.fromRGB(255,255,255)
-        TabButton.TextSize = 16
-        TabButton.Parent = MainFrame
-        Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0,6)
-
-        TabButton.MouseButton1Click:Connect(function()
-            for _, t in pairs(window.Tabs) do
-                t.ContentFrame.Visible = false
-                t.TabButton.BackgroundColor3 = Color3.fromRGB(0,20,40)
-            end
-            ContentFrame.Visible = true
-            TabButton.BackgroundColor3 = Color3.fromRGB(61,133,224)
-        end)
-
-        -- Default select first tab
-        if #window.Tabs == 0 then
-            ContentFrame.Visible = true
-            TabButton.BackgroundColor3 = Color3.fromRGB(61,133,224)
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == DragInput and Dragging then
+            Update(input)
         end
-
-        tab.ContentFrame = ContentFrame
-        tab.TabButton = TabButton
-
-        -- Add button function
-        function tab:CreateButton(text, callback)
-            local btn = Instance.new("TextButton", ContentFrame)
-            btn.Size = UDim2.new(0.9,0,0,36)
-            btn.Position = UDim2.new(0,0,0,#tab.Buttons*42)
-            btn.BackgroundColor3 = Color3.fromRGB(0,20,40)
-            btn.Font = Enum.Font.SourceSansBold
-            btn.TextColor3 = Color3.fromRGB(255,255,255)
-            btn.TextSize = 18
-            btn.Text = text
-            Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
-            btn.MouseButton1Click:Connect(callback)
-            table.insert(tab.Buttons, btn)
-            return btn
-        end
-
-        -- Add toggle function
-        function tab:CreateToggle(text, default, callback)
-            local toggle = false
-            local btn = Instance.new("TextButton", ContentFrame)
-            btn.Size = UDim2.new(0.9,0,0,36)
-            btn.Position = UDim2.new(0,0,0, (#tab.Buttons + #tab.Toggles)*42)
-            btn.BackgroundColor3 = Color3.fromRGB(0,20,40)
-            btn.Font = Enum.Font.SourceSansBold
-            btn.TextColor3 = Color3.fromRGB(255,255,255)
-            btn.TextSize = 18
-            btn.Text = text..": OFF"
-            Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
-            btn.MouseButton1Click:Connect(function()
-                toggle = not toggle
-                btn.Text = text..(toggle and ": ON" or ": OFF")
-                btn.BackgroundColor3 = toggle and Color3.fromRGB(61,133,224) or Color3.fromRGB(0,20,40)
-                if callback then callback(toggle) end
-            end)
-            table.insert(tab.Toggles, btn)
-            return btn
-        end
-
-        -- Add slider function
-        function tab:CreateSlider(text, min, max, default, callback)
-            local frame = Instance.new("Frame", ContentFrame)
-            frame.Size = UDim2.new(0.9,0,0,32)
-            frame.Position = UDim2.new(0,0,0,(#tab.Buttons + #tab.Toggles + #tab.Sliders)*42)
-            frame.BackgroundTransparency = 1
-
-            local bar = Instance.new("Frame", frame)
-            bar.Size = UDim2.new(1,0,0,8)
-            bar.Position = UDim2.new(0,0,0.5,-4)
-            bar.BackgroundColor3 = Color3.fromRGB(0,20,40)
-            Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0)
-
-            local fill = Instance.new("Frame", bar)
-            fill.Size = UDim2.new((default-min)/(max-min),0,1,0)
-            fill.BackgroundColor3 = Color3.fromRGB(61,133,224)
-            Instance.new("UICorner", fill).CornerRadius = UDim.new(1,0)
-
-            local ValueLabel = Instance.new("TextLabel", frame)
-            ValueLabel.Position = UDim2.new(1, -50, 0, -4)
-            ValueLabel.Size = UDim2.new(0,50,1,0)
-            ValueLabel.BackgroundTransparency = 1
-            ValueLabel.TextColor3 = Color3.fromRGB(255,255,255)
-            ValueLabel.Font = Enum.Font.SourceSansBold
-            ValueLabel.TextSize = 14
-            ValueLabel.Text = tostring(default)
-
-            local dragging = false
-            bar.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                end
-            end)
-            bar.InputEnded:Connect(function() dragging = false end)
-            game:GetService("UserInputService").InputChanged:Connect(function(input)
-                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    local relX = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-                    fill.Size = UDim2.new(relX,0,1,0)
-                    local val = math.floor(min + relX*(max-min))
-                    ValueLabel.Text = tostring(val)
-                    if callback then callback(val) end
-                end
-            end)
-
-            table.insert(tab.Sliders, frame)
-            return frame
-        end
-
-        table.insert(window.Tabs, tab)
-        return tab
-    end
-
-    return window
+    end)
 end
 
-return SyrexUILibrary
+MakeDraggable(TopBar, MainFrame)
+
+-- Tab system
+SyrexUI.Tabs = {}
+local TabButtonsFrame = Instance.new("Frame", MainFrame)
+TabButtonsFrame.Size = UDim2.new(0,100,1,0)
+TabButtonsFrame.Position = UDim2.new(0,0,0,34)
+TabButtonsFrame.BackgroundColor3 = SyrexUI.Theme.Background
+
+local ContentHolder = Instance.new("Frame", MainFrame)
+ContentHolder.Size = UDim2.new(1,-100,1,-34)
+ContentHolder.Position = UDim2.new(0,100,0,34)
+ContentHolder.BackgroundTransparency = 1
+
+-- Create Tab
+function SyrexUI:CreateTab(name)
+    local tab = {}
+    tab.Name = name
+    tab.Button = Instance.new("TextButton", TabButtonsFrame)
+    tab.Button.Size = UDim2.new(1,-10,0,40)
+    tab.Button.Position = UDim2.new(0,5,0,#self.Tabs*50 + 10)
+    tab.Button.BackgroundColor3 = SyrexUI.Theme.Section
+    tab.Button.Font = Enum.Font.SourceSansBold
+    tab.Button.TextColor3 = SyrexUI.Theme.Text
+    tab.Button.TextSize = 16
+    tab.Button.Text = name
+    Instance.new("UICorner", tab.Button).CornerRadius = UDim.new(0,6)
+    
+    tab.Content = Instance.new("Frame", ContentHolder)
+    tab.Content.Size = UDim2.new(1,0,1,0)
+    tab.Content.BackgroundTransparency = 1
+    tab.Content.Visible = false
+
+    tab.Button.MouseButton1Click:Connect(function()
+        for _, t in pairs(self.Tabs) do
+            t.Content.Visible = false
+            t.Button.BackgroundColor3 = SyrexUI.Theme.Section
+        end
+        tab.Content.Visible = true
+        tab.Button.BackgroundColor3 = SyrexUI.Theme.Element
+    end)
+
+    table.insert(self.Tabs, tab)
+    if #self.Tabs == 1 then
+        tab.Button.BackgroundColor3 = SyrexUI.Theme.Element
+        tab.Content.Visible = true
+    end
+    return tab
+end
+
+-- Add Button
+function SyrexUI:AddButton(tab, text, callback)
+    local btn = Instance.new("TextButton", tab.Content)
+    btn.Size = UDim2.new(0.9,0,0,36)
+    btn.Position = UDim2.new(0,0,0,#tab.Content:GetChildren()*40)
+    btn.BackgroundColor3 = SyrexUI.Theme.Section
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextColor3 = SyrexUI.Theme.Text
+    btn.TextSize = 18
+    btn.Text = text
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Add Toggle
+function SyrexUI:AddToggle(tab, text, default, callback)
+    local toggled = default or false
+    local btn = Instance.new("TextButton", tab.Content)
+    btn.Size = UDim2.new(0.9,0,0,36)
+    btn.Position = UDim2.new(0,0,0,#tab.Content:GetChildren()*40)
+    btn.BackgroundColor3 = SyrexUI.Theme.Section
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextColor3 = SyrexUI.Theme.Text
+    btn.TextSize = 18
+    btn.Text = text .. ": " .. (toggled and "ON" or "OFF")
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+    
+    btn.MouseButton1Click:Connect(function()
+        toggled = not toggled
+        btn.Text = text .. ": " .. (toggled and "ON" or "OFF")
+        callback(toggled)
+    end)
+end
+
+-- Add Slider
+function SyrexUI:AddSlider(tab, text, min, max, default, callback)
+    local frame = Instance.new("Frame", tab.Content)
+    frame.Size = UDim2.new(0.9,0,0,36)
+    frame.Position = UDim2.new(0,0,0,#tab.Content:GetChildren()*40)
+    frame.BackgroundColor3 = SyrexUI.Theme.Section
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,6)
+
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(1,-50,1,0)
+    label.Position = UDim2.new(0,4,0,0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = SyrexUI.Theme.Text
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 16
+    label.Text = text
+
+    local valueLabel = Instance.new("TextLabel", frame)
+    valueLabel.Size = UDim2.new(0,50,1,0)
+    valueLabel.Position = UDim2.new(1,-50,0,0)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.TextColor3 = SyrexUI.Theme.Text
+    valueLabel.Font = Enum.Font.SourceSansBold
+    valueLabel.TextSize = 16
+    valueLabel.Text = tostring(default or min)
+
+    local dragging = false
+    local bar = Instance.new("Frame", frame)
+    bar.Size = UDim2.new(1,0,0,8)
+    bar.Position = UDim2.new(0,0,0.5,-4)
+    bar.BackgroundColor3 = SyrexUI.Theme.Section
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(1,0)
+
+    local fill = Instance.new("Frame", bar)
+    fill.Size = UDim2.new(((default or min)-min)/(max-min),0,1,0)
+    fill.BackgroundColor3 = SyrexUI.Theme.Element
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(1,0)
+
+    bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+        end
+    end)
+    bar.InputEnded:Connect(function() dragging = false end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local relX = math.clamp((input.Position.X - bar.AbsolutePosition.X)/bar.AbsoluteSize.X,0,1)
+            fill.Size = UDim2.new(relX,0,1,0)
+            local val = math.floor(min + relX*(max-min))
+            valueLabel.Text = tostring(val)
+            callback(val)
+        end
+    end)
+end
+
+return SyrexUI
