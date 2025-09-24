@@ -1,4 +1,4 @@
--- Syrex UI Library - With Fixed Toggle Button & Customizable Note
+-- Syrex UI Library - With Toggle Button & Number Box
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -25,10 +25,10 @@ local Settings = {
 
 -- Key System Configuration
 local KeySystemConfig = {
-    Enabled = false, -- Set to true to enable key system
-    KeyLink = "https://raw.githubusercontent.com/Joshingtonn123/JoshScript/refs/heads/main/SyrexUITESTING", -- Your script link
-    CorrectKey = "6769", -- The key users need to enter
-    NoteText = "Enter the key to access the GUI" -- Customizable note text
+    Enabled = false,
+    KeyLink = "https://raw.githubusercontent.com/Joshingtonn123/JoshScript/refs/heads/main/SyrexUITESTING",
+    CorrectKey = "6769",
+    NoteText = "Enter the key to access the GUI"
 }
 
 -- Create draggable function
@@ -71,7 +71,7 @@ Gui.Name = "SyrexUILib"
 Gui.Parent = CoreGui
 Gui.ResetOnSpawn = false
 
--- Key System GUI (Shows first if enabled)
+-- Key System GUI
 local KeySystemGui = Instance.new("ScreenGui")
 KeySystemGui.Name = "SyrexKeySystem"
 KeySystemGui.Parent = CoreGui
@@ -86,7 +86,7 @@ KeyFrame.BackgroundColor3 = Theme.Background
 KeyFrame.Parent = KeySystemGui
 Instance.new("UICorner", KeyFrame).CornerRadius = UDim.new(0,6)
 
--- Key System Close Button (X button)
+-- Key System Close Button
 local KeyCloseBtn = Instance.new("TextButton", KeyFrame)
 KeyCloseBtn.Size = UDim2.new(0, 30, 0, 30)
 KeyCloseBtn.Position = UDim2.new(1, -35, 0, 5)
@@ -107,7 +107,7 @@ KeyTitle.TextColor3 = Theme.Text
 KeyTitle.Font = Enum.Font.FredokaOne
 KeyTitle.TextSize = 24
 
--- Key Note (Customizable - doesn't show the key)
+-- Key Note
 local KeyNote = Instance.new("TextLabel", KeyFrame)
 KeyNote.Size = UDim2.new(1, 0, 0, 30)
 KeyNote.Position = UDim2.new(0, 0, 0, 60)
@@ -168,7 +168,7 @@ CopyKeyBtn.Font = Enum.Font.SourceSansBold
 CopyKeyBtn.TextSize = 14
 Instance.new("UICorner", CopyKeyBtn).CornerRadius = UDim.new(0,6)
 
--- Main GUI (Hidden until key is correct)
+-- Main GUI
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0,520,0,340)
 MainFrame.Position = UDim2.new(0.5,-260,0.5,-170)
@@ -187,7 +187,7 @@ TabFrame.Parent = Gui
 TabFrame.Visible = false
 Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,6)
 
--- GUI Toggle Button (for mobile/non-keyboard users) - FIXED: Never disappears
+-- GUI Toggle Button - FIXED: Added back and parented to CoreGui
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 80, 0, 40)
 ToggleBtn.Position = UDim2.new(0, 10, 0.5, -20)
@@ -197,7 +197,7 @@ ToggleBtn.TextColor3 = Theme.Text
 ToggleBtn.Font = Enum.Font.SourceSansBold
 ToggleBtn.TextSize = 16
 ToggleBtn.Visible = false
-ToggleBtn.Parent = CoreGui -- Changed parent to CoreGui so it never disappears
+ToggleBtn.Parent = CoreGui -- Parent to CoreGui so it never disappears
 ToggleBtn.ZIndex = 10
 Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0,6)
 
@@ -243,14 +243,17 @@ RunService.RenderStepped:Connect(function()
         TabFrame.Position = UDim2.fromOffset(newPos.X,newPos.Y)
     end
 end)
+
 TabFrame:GetPropertyChangedSignal("Position"):Connect(function()
     if independent then tabOffset = getOffset() end
 end)
+
 TabFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         independent = true
     end
 end)
+
 local lastClick = 0
 TabFrame.InputBegan:Connect(function(input)
     if input.UserInputType==Enum.UserInputType.MouseButton1 then
@@ -314,7 +317,6 @@ end
 KeySubmit.MouseButton1Click:Connect(function()
     local enteredKey = KeyTextBox.Text
     if checkKey(enteredKey) then
-        -- Correct key
         KeySystemGui.Enabled = false
         Gui.Enabled = true
         MainFrame.Visible = true
@@ -322,7 +324,6 @@ KeySubmit.MouseButton1Click:Connect(function()
         ToggleBtn.Visible = true
         ToggleBtn.Text = "Close"
     else
-        -- Wrong key
         KeyError.Text = "Invalid key! Please try again."
         KeyError.Visible = true
         wait(2)
@@ -336,26 +337,21 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     end
 end)
 
--- Close key system with X button
 KeyCloseBtn.MouseButton1Click:Connect(function()
     KeySystemGui.Enabled = false
 end)
 
--- Copy Key Link functionality
 CopyKeyBtn.MouseButton1Click:Connect(function()
-    -- Try to copy to clipboard
     pcall(function()
         setclipboard(KeySystemConfig.KeyLink)
     end)
-    
-    -- Show copied message
     local originalText = CopyKeyBtn.Text
     CopyKeyBtn.Text = "Copied!"
     wait(1)
     CopyKeyBtn.Text = originalText
 end)
 
--- Toggle Button functionality - FIXED: Now parented to CoreGui so it never disappears
+-- Toggle Button functionality
 ToggleBtn.MouseButton1Click:Connect(function()
     Gui.Enabled = not Gui.Enabled
     if Gui.Enabled then
@@ -365,11 +361,10 @@ ToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- CreateWindow with configurable KeySystem
+-- CreateWindow
 function SyrexUI:CreateWindow(name)
     Title.Text = name or Title.Text
     
-    -- Only show key system if enabled in config
     if KeySystemConfig.Enabled then
         Gui.Enabled = false
         KeySystemGui.Enabled = true
@@ -389,13 +384,9 @@ end
 -- Method to configure KeySystem
 function SyrexUI:KeySystem(enabled, keyLink, correctKey, noteText)
     KeySystemConfig.Enabled = enabled or false
-    if keyLink then
-        KeySystemConfig.KeyLink = keyLink
-    end
-    if correctKey then
-        KeySystemConfig.CorrectKey = correctKey
-    end
-    if noteText then
+    if keyLink then KeySystemConfig.KeyLink = keyLink end
+    if correctKey then KeySystemConfig.CorrectKey = correctKey end
+    if noteText then 
         KeySystemConfig.NoteText = noteText
         KeyNote.Text = noteText
     end
@@ -534,6 +525,72 @@ function SyrexUI:CreateTab(name)
             end)
             elementCount = elementCount + 1
             return sliderFrame
+        end,
+        
+        -- NEW: AddNumberBox function
+        AddNumberBox = function(self, text, default, callback)
+            local yOffset = getYOffset()
+            
+            local numberFrame = Instance.new("Frame", self.content)
+            numberFrame.Size = UDim2.new(0.9, 0, 0, 36)
+            numberFrame.Position = UDim2.new(0.05, 0, 0, yOffset)
+            numberFrame.BackgroundColor3 = Theme.Section
+            Instance.new("UICorner", numberFrame).CornerRadius = UDim.new(0,6)
+
+            local label = Instance.new("TextLabel", numberFrame)
+            label.Size = UDim2.new(0.4, 0, 1, 0)
+            label.Position = UDim2.new(0, 10, 0, 0)
+            label.BackgroundTransparency = 1
+            label.Text = text
+            label.TextColor3 = Theme.Text
+            label.Font = Enum.Font.SourceSansBold
+            label.TextSize = 14
+            label.TextXAlignment = Enum.TextXAlignment.Left
+
+            local numberBox = Instance.new("TextBox", numberFrame)
+            numberBox.Size = UDim2.new(0.5, 0, 0.7, 0)
+            numberBox.Position = UDim2.new(0.45, 0, 0.15, 0)
+            numberBox.BackgroundColor3 = Theme.Background
+            numberBox.TextColor3 = Theme.Text
+            numberBox.Font = Enum.Font.SourceSans
+            numberBox.TextSize = 14
+            numberBox.Text = tostring(default)
+            numberBox.PlaceholderText = "Enter number..."
+            numberBox.PlaceholderColor3 = Color3.fromRGB(200,200,200)
+            Instance.new("UICorner", numberBox).CornerRadius = UDim.new(0,4)
+
+            local function validateNumber(input)
+                local num = tonumber(input)
+                if num then
+                    numberBox.BackgroundColor3 = Theme.Background
+                    if callback then callback(num) end
+                    return true
+                else
+                    numberBox.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+                    return false
+                end
+            end
+
+            numberBox.FocusLost:Connect(function()
+                validateNumber(numberBox.Text)
+            end)
+
+            numberBox:GetPropertyChangedSignal("Text"):Connect(function()
+                if numberBox:IsFocused() then
+                    validateNumber(numberBox.Text)
+                end
+            end)
+
+            elementCount = elementCount + 1
+            
+            return {
+                Frame = numberFrame,
+                GetValue = function() return tonumber(numberBox.Text) or default end,
+                SetValue = function(value)
+                    numberBox.Text = tostring(value)
+                    validateNumber(value)
+                end
+            }
         end,
         
         AddKeybind = function(self, text, defaultKey, callback)
