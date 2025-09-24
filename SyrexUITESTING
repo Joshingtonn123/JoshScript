@@ -1,4 +1,4 @@
--- Syrex UI Library - With Fixed Toggle Button & All Features
+-- Syrex UI Library - With Fixed Toggle Button & Customizable Note
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -27,7 +27,8 @@ local Settings = {
 local KeySystemConfig = {
     Enabled = false, -- Set to true to enable key system
     KeyLink = "https://raw.githubusercontent.com/Joshingtonn123/JoshScript/refs/heads/main/SyrexUITESTING", -- Your script link
-    CorrectKey = "6769" -- The key users need to enter
+    CorrectKey = "6769", -- The key users need to enter
+    NoteText = "Enter the key to access the GUI" -- Customizable note text
 }
 
 -- Create draggable function
@@ -106,15 +107,16 @@ KeyTitle.TextColor3 = Theme.Text
 KeyTitle.Font = Enum.Font.FredokaOne
 KeyTitle.TextSize = 24
 
--- Key Note
+-- Key Note (Customizable - doesn't show the key)
 local KeyNote = Instance.new("TextLabel", KeyFrame)
 KeyNote.Size = UDim2.new(1, 0, 0, 30)
 KeyNote.Position = UDim2.new(0, 0, 0, 60)
 KeyNote.BackgroundTransparency = 1
-KeyNote.Text = "Key is: " .. KeySystemConfig.CorrectKey
+KeyNote.Text = KeySystemConfig.NoteText
 KeyNote.TextColor3 = Theme.Text
 KeyNote.Font = Enum.Font.SourceSans
 KeyNote.TextSize = 16
+KeyNote.TextWrapped = true
 
 -- Key Input Frame
 local KeyInputFrame = Instance.new("Frame", KeyFrame)
@@ -185,9 +187,9 @@ TabFrame.Parent = Gui
 TabFrame.Visible = false
 Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,6)
 
--- GUI Toggle Button (for mobile/non-keyboard users) - FIXED: Bigger and always visible
+-- GUI Toggle Button (for mobile/non-keyboard users) - FIXED: Never disappears
 local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 80, 0, 40) -- Bigger size
+ToggleBtn.Size = UDim2.new(0, 80, 0, 40)
 ToggleBtn.Position = UDim2.new(0, 10, 0.5, -20)
 ToggleBtn.BackgroundColor3 = Theme.Element
 ToggleBtn.Text = "Close"
@@ -195,7 +197,7 @@ ToggleBtn.TextColor3 = Theme.Text
 ToggleBtn.Font = Enum.Font.SourceSansBold
 ToggleBtn.TextSize = 16
 ToggleBtn.Visible = false
-ToggleBtn.Parent = Gui
+ToggleBtn.Parent = CoreGui -- Changed parent to CoreGui so it never disappears
 ToggleBtn.ZIndex = 10
 Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0,6)
 
@@ -353,7 +355,7 @@ CopyKeyBtn.MouseButton1Click:Connect(function()
     CopyKeyBtn.Text = originalText
 end)
 
--- Toggle Button functionality - FIXED: Always visible and works properly
+-- Toggle Button functionality - FIXED: Now parented to CoreGui so it never disappears
 ToggleBtn.MouseButton1Click:Connect(function()
     Gui.Enabled = not Gui.Enabled
     if Gui.Enabled then
@@ -385,14 +387,17 @@ function SyrexUI:CreateWindow(name)
 end
 
 -- Method to configure KeySystem
-function SyrexUI:KeySystem(enabled, keyLink, correctKey)
+function SyrexUI:KeySystem(enabled, keyLink, correctKey, noteText)
     KeySystemConfig.Enabled = enabled or false
     if keyLink then
         KeySystemConfig.KeyLink = keyLink
     end
     if correctKey then
         KeySystemConfig.CorrectKey = correctKey
-        KeyNote.Text = "Key is: " .. correctKey
+    end
+    if noteText then
+        KeySystemConfig.NoteText = noteText
+        KeyNote.Text = noteText
     end
     return self
 end
