@@ -1,4 +1,4 @@
--- Syrex UI Library - With Toggle Button & Number Box
+-- Syrex UI Library - With Toggle Button & 3 Tabs
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -187,7 +187,7 @@ TabFrame.Parent = Gui
 TabFrame.Visible = false
 Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,6)
 
--- GUI Toggle Button - FIXED: Added back and parented to CoreGui
+-- GUI Toggle Button - FIXED: Always visible and draggable
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 80, 0, 40)
 ToggleBtn.Position = UDim2.new(0, 10, 0.5, -20)
@@ -527,7 +527,6 @@ function SyrexUI:CreateTab(name)
             return sliderFrame
         end,
         
-        -- NEW: AddNumberBox function
         AddNumberBox = function(self, text, default, callback)
             local yOffset = getYOffset()
             
@@ -703,108 +702,6 @@ function SyrexUI:CreateTab(name)
                 end)
             end)
             elementCount = elementCount + 1
-        end,
-        
-        AddDropdown = function(self, text, options, default, callback)
-            local yOffset = getYOffset()
-            
-            local dropdownFrame = Instance.new("Frame", self.content)
-            dropdownFrame.Size = UDim2.new(0.9, 0, 0, 36)
-            dropdownFrame.Position = UDim2.new(0.05, 0, 0, yOffset)
-            dropdownFrame.BackgroundColor3 = Theme.Section
-            Instance.new("UICorner", dropdownFrame).CornerRadius = UDim.new(0,6)
-
-            local dropdownLabel = Instance.new("TextLabel", dropdownFrame)
-            dropdownLabel.Size = UDim2.new(0.7, 0, 1, 0)
-            dropdownLabel.Position = UDim2.new(0, 10, 0, 0)
-            dropdownLabel.BackgroundTransparency = 1
-            dropdownLabel.Text = text .. ": " .. (options[default] or "Select")
-            dropdownLabel.TextColor3 = Theme.Text
-            dropdownLabel.Font = Enum.Font.SourceSansBold
-            dropdownLabel.TextSize = 14
-            dropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-            local arrow = Instance.new("TextLabel", dropdownFrame)
-            arrow.Size = UDim2.new(0, 20, 1, 0)
-            arrow.Position = UDim2.new(1, -30, 0, 0)
-            arrow.BackgroundTransparency = 1
-            arrow.Text = "▼"
-            arrow.TextColor3 = Theme.Text
-            arrow.Font = Enum.Font.SourceSansBold
-            arrow.TextSize = 14
-
-            local dropdownBtn = Instance.new("TextButton", dropdownFrame)
-            dropdownBtn.Size = UDim2.new(1, 0, 1, 0)
-            dropdownBtn.BackgroundTransparency = 1
-            dropdownBtn.Text = ""
-
-            local optionsFrame = Instance.new("Frame", self.content)
-            optionsFrame.Size = UDim2.new(0.9, 0, 0, 0)
-            optionsFrame.Position = UDim2.new(0.05, 0, 0, yOffset + 41)
-            optionsFrame.BackgroundColor3 = Theme.Section
-            optionsFrame.Visible = false
-            optionsFrame.ClipsDescendants = true
-            optionsFrame.ZIndex = 2
-            Instance.new("UICorner", optionsFrame).CornerRadius = UDim.new(0,6)
-
-            local UIListLayout = Instance.new("UIListLayout", optionsFrame)
-            UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-            local opened = false
-            local selected = default
-
-            local function updateOptions()
-                for i, v in ipairs(optionsFrame:GetChildren()) do
-                    if v:IsA("TextButton") then
-                        v:Destroy()
-                    end
-                end
-
-                for i, option in ipairs(options) do
-                    local optionBtn = Instance.new("TextButton", optionsFrame)
-                    optionBtn.Size = UDim2.new(1, 0, 0, 30)
-                    optionBtn.BackgroundColor3 = i == selected and Theme.Element or Theme.Section
-                    optionBtn.Text = option
-                    optionBtn.TextColor3 = Theme.Text
-                    optionBtn.Font = Enum.Font.SourceSans
-                    optionBtn.TextSize = 14
-                    optionBtn.LayoutOrder = i
-                    optionBtn.ZIndex = 3
-                    optionBtn.TextXAlignment = Enum.TextXAlignment.Center
-                    Instance.new("UICorner", optionBtn).CornerRadius = UDim.new(0,4)
-                    
-                    optionBtn.MouseButton1Click:Connect(function()
-                        selected = i
-                        dropdownLabel.Text = text .. ": " .. option
-                        optionsFrame.Visible = false
-                        opened = false
-                        arrow.Text = "▼"
-                        if callback then callback(option, i) end
-                    end)
-                end
-                
-                optionsFrame.Size = UDim2.new(1, 0, 0, #options * 30)
-            end
-
-            updateOptions()
-
-            dropdownBtn.MouseButton1Click:Connect(function()
-                opened = not opened
-                optionsFrame.Visible = opened
-                arrow.Text = opened and "▲" or "▼"
-            end)
-            elementCount = elementCount + 1
-            return {
-                Frame = dropdownFrame,
-                GetSelection = function() return selected, options[selected] end,
-                SetSelection = function(index)
-                    if index >= 1 and index <= #options then
-                        selected = index
-                        dropdownLabel.Text = text .. ": " .. options[index]
-                        if callback then callback(options[index], index) end
-                    end
-                end
-            }
         end,
         
         AddLabel = function(self, text)
