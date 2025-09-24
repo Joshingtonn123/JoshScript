@@ -1,4 +1,4 @@
--- Syrex UI Library - With Key System
+-- Syrex UI Library - With Key System & Toggle Button
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -21,8 +21,6 @@ local Theme = {
 
 local Settings = {
     CloseBind = Enum.KeyCode.RightControl,
-    KeySystem = true, -- Enable key system
-    CorrectKey = "6769" -- Default key
 }
 
 -- Create draggable function
@@ -65,11 +63,12 @@ Gui.Name = "SyrexUILib"
 Gui.Parent = CoreGui
 Gui.ResetOnSpawn = false
 
--- Key System GUI (Shows first)
+-- Key System GUI (Shows first if enabled)
 local KeySystemGui = Instance.new("ScreenGui")
 KeySystemGui.Name = "SyrexKeySystem"
 KeySystemGui.Parent = CoreGui
 KeySystemGui.ResetOnSpawn = false
+KeySystemGui.Enabled = false
 
 -- Key System Main Frame
 local KeyFrame = Instance.new("Frame")
@@ -79,10 +78,21 @@ KeyFrame.BackgroundColor3 = Theme.Background
 KeyFrame.Parent = KeySystemGui
 Instance.new("UICorner", KeyFrame).CornerRadius = UDim.new(0,6)
 
+-- Key System Close Button (X button)
+local KeyCloseBtn = Instance.new("TextButton", KeyFrame)
+KeyCloseBtn.Size = UDim2.new(0, 30, 0, 30)
+KeyCloseBtn.Position = UDim2.new(1, -35, 0, 5)
+KeyCloseBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+KeyCloseBtn.Text = "X"
+KeyCloseBtn.TextColor3 = Theme.Text
+KeyCloseBtn.Font = Enum.Font.SourceSansBold
+KeyCloseBtn.TextSize = 18
+Instance.new("UICorner", KeyCloseBtn).CornerRadius = UDim.new(0,6)
+
 -- Key System Title
 local KeyTitle = Instance.new("TextLabel", KeyFrame)
-KeyTitle.Size = UDim2.new(1, 0, 0, 50)
-KeyTitle.Position = UDim2.new(0, 0, 0, 10)
+KeyTitle.Size = UDim2.new(1, -40, 0, 50)
+KeyTitle.Position = UDim2.new(0, 10, 0, 10)
 KeyTitle.BackgroundTransparency = 1
 KeyTitle.Text = "Syrex UI Library"
 KeyTitle.TextColor3 = Theme.Text
@@ -168,6 +178,19 @@ TabFrame.Parent = Gui
 TabFrame.Visible = false
 Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,6)
 
+-- GUI Toggle Button (for mobile/non-keyboard users)
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Position = UDim2.new(0, 10, 0.5, -25)
+ToggleBtn.BackgroundColor3 = Theme.Element
+ToggleBtn.Text = "☰"
+ToggleBtn.TextColor3 = Theme.Text
+ToggleBtn.Font = Enum.Font.SourceSansBold
+ToggleBtn.TextSize = 20
+ToggleBtn.Visible = false
+ToggleBtn.Parent = Gui
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0,6)
+
 -- Floating tab offset
 local independent = false
 local defaultOffset = Vector2.new(-110,0)
@@ -242,7 +265,7 @@ local SyrexUI = {Tabs = {}, Gui = Gui, KeySystemGui = KeySystemGui}
 
 -- Key System Functionality
 local function checkKey(inputKey)
-    return inputKey == Settings.CorrectKey
+    return inputKey == "6769" -- Hardcoded key
 end
 
 KeySubmit.MouseButton1Click:Connect(function()
@@ -253,6 +276,7 @@ KeySubmit.MouseButton1Click:Connect(function()
         Gui.Enabled = true
         MainFrame.Visible = true
         TabFrame.Visible = true
+        ToggleBtn.Visible = true
     else
         -- Wrong key
         KeyError.Text = "Invalid key! Please try again."
@@ -266,6 +290,11 @@ KeyTextBox.FocusLost:Connect(function(enterPressed)
     if enterPressed then
         KeySubmit.MouseButton1Click:Connect()
     end
+end)
+
+-- Close key system with X button
+KeyCloseBtn.MouseButton1Click:Connect(function()
+    KeySystemGui.Enabled = false
 end)
 
 -- Copy Key Link functionality
@@ -284,22 +313,29 @@ CopyKeyBtn.MouseButton1Click:Connect(function()
     CopyKeyBtn.Text = originalText
 end)
 
--- CreateWindow
-function SyrexUI:CreateWindow(name, toggleKey)
+-- Toggle Button functionality
+ToggleBtn.MouseButton1Click:Connect(function()
+    Gui.Enabled = not Gui.Enabled
+end)
+
+-- CreateWindow with KeySystem parameter
+function SyrexUI:CreateWindow(name, keySystemEnabled)
     Title.Text = name or Title.Text
-    if toggleKey then
-        Settings.CloseBind = toggleKey
-    end
+    
+    -- Set key system based on parameter
+    local useKeySystem = keySystemEnabled or false -- Default to false if not specified
     
     -- Only show key system if enabled
-    if Settings.KeySystem then
+    if useKeySystem then
         Gui.Enabled = false
         KeySystemGui.Enabled = true
+        ToggleBtn.Visible = false
     else
         KeySystemGui.Enabled = false
         Gui.Enabled = true
         MainFrame.Visible = true
         TabFrame.Visible = true
+        ToggleBtn.Visible = true
     end
     
     return self
