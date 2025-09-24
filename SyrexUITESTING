@@ -1,4 +1,4 @@
--- Syrex UI Library - With Configurable Key System
+-- Syrex UI Library - With Fixed Toggle Button & All Features
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -185,15 +185,15 @@ TabFrame.Parent = Gui
 TabFrame.Visible = false
 Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,6)
 
--- GUI Toggle Button (for mobile/non-keyboard users) - FIXED: Now draggable and persistent
+-- GUI Toggle Button (for mobile/non-keyboard users) - FIXED: Bigger and always visible
 local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 60, 0, 30)
-ToggleBtn.Position = UDim2.new(0, 10, 0.5, -15)
+ToggleBtn.Size = UDim2.new(0, 80, 0, 40) -- Bigger size
+ToggleBtn.Position = UDim2.new(0, 10, 0.5, -20)
 ToggleBtn.BackgroundColor3 = Theme.Element
 ToggleBtn.Text = "Close"
 ToggleBtn.TextColor3 = Theme.Text
 ToggleBtn.Font = Enum.Font.SourceSansBold
-ToggleBtn.TextSize = 14
+ToggleBtn.TextSize = 16
 ToggleBtn.Visible = false
 ToggleBtn.Parent = Gui
 ToggleBtn.ZIndex = 10
@@ -353,7 +353,7 @@ CopyKeyBtn.MouseButton1Click:Connect(function()
     CopyKeyBtn.Text = originalText
 end)
 
--- Toggle Button functionality - FIXED: Now changes text and stays visible
+-- Toggle Button functionality - FIXED: Always visible and works properly
 ToggleBtn.MouseButton1Click:Connect(function()
     Gui.Enabled = not Gui.Enabled
     if Gui.Enabled then
