@@ -1,4 +1,4 @@
--- Syrex UI Library - Modular Version with Proper Keybind Method
+-- Syrex UI Library - Fixed Version with Dropdown
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -157,11 +157,15 @@ end
 
 -- CreateTab
 function SyrexUI:CreateTab(name)
-    local content = Instance.new("Frame", MainFrame)
+    local content = Instance.new("ScrollingFrame", MainFrame)
     content.Size = UDim2.new(1,-24,1,-56)
     content.Position = UDim2.new(0,12,0,44)
     content.BackgroundTransparency = 1
     content.Visible = false
+    content.ScrollingEnabled = true
+    content.ScrollBarThickness = 6
+    content.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    content.CanvasSize = UDim2.new(0,0,0,0)
 
     local btn = Instance.new("TextButton", TabFrame)
     btn.Size = UDim2.new(1,-10,0,40)
@@ -190,8 +194,9 @@ function SyrexUI:CreateTab(name)
     local tabData = {
         button = btn, 
         content = content,
+        
         AddButton = function(self, text, callback)
-            local yOffset = (#self.content:GetChildren())*42
+            local yOffset = (#self.content:GetChildren() - 1)*42
             local btn = Instance.new("TextButton", self.content)
             btn.Size = UDim2.new(0.9,0,0,36)
             btn.Position = UDim2.new(0,0,0,yOffset)
@@ -206,7 +211,7 @@ function SyrexUI:CreateTab(name)
         end,
         
         AddToggle = function(self, text, default, callback)
-            local yOffset = (#self.content:GetChildren())*42
+            local yOffset = (#self.content:GetChildren() - 1)*42
             local toggle = Instance.new("TextButton", self.content)
             toggle.Size = UDim2.new(0.9,0,0,36)
             toggle.Position = UDim2.new(0,0,0,yOffset)
@@ -228,7 +233,7 @@ function SyrexUI:CreateTab(name)
         end,
         
         AddSlider = function(self, text, min, max, default, callback)
-            local yOffset = (#self.content:GetChildren())*42
+            local yOffset = (#self.content:GetChildren() - 1)*42
             local sliderFrame = Instance.new("Frame", self.content)
             sliderFrame.Size = UDim2.new(0.9,0,0,32)
             sliderFrame.Position = UDim2.new(0,0,0,yOffset)
@@ -274,9 +279,8 @@ function SyrexUI:CreateTab(name)
             return sliderFrame
         end,
         
-        -- NEW: AddKeybind method for the tab
         AddKeybind = function(self, text, defaultKey, callback)
-            local yOffset = (#self.content:GetChildren())*42
+            local yOffset = (#self.content:GetChildren() - 1)*42
             
             local keybindFrame = Instance.new("Frame", self.content)
             keybindFrame.Size = UDim2.new(0.9, 0, 0, 24)
@@ -336,6 +340,105 @@ function SyrexUI:CreateTab(name)
                     if callback then callback(currentKey) end
                 end
             }
+        end,
+        
+        -- NEW: AddDropdown method
+        AddDropdown = function(self, text, options, default, callback)
+            local yOffset = (#self.content:GetChildren() - 1)*42
+            
+            local dropdownFrame = Instance.new("Frame", self.content)
+            dropdownFrame.Size = UDim2.new(0.9, 0, 0, 36)
+            dropdownFrame.Position = UDim2.new(0, 0, 0, yOffset)
+            dropdownFrame.BackgroundColor3 = Theme.Section
+            Instance.new("UICorner", dropdownFrame).CornerRadius = UDim.new(0,6)
+
+            local dropdownLabel = Instance.new("TextLabel", dropdownFrame)
+            dropdownLabel.Size = UDim2.new(0.7, 0, 1, 0)
+            dropdownLabel.Position = UDim2.new(0, 10, 0, 0)
+            dropdownLabel.BackgroundTransparency = 1
+            dropdownLabel.Text = text .. ": " .. (options[default] or "Select")
+            dropdownLabel.TextColor3 = Theme.Text
+            dropdownLabel.Font = Enum.Font.SourceSansBold
+            dropdownLabel.TextSize = 14
+            dropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+            local arrow = Instance.new("TextLabel", dropdownFrame)
+            arrow.Size = UDim2.new(0, 20, 1, 0)
+            arrow.Position = UDim2.new(1, -30, 0, 0)
+            arrow.BackgroundTransparency = 1
+            arrow.Text = "▼"
+            arrow.TextColor3 = Theme.Text
+            arrow.Font = Enum.Font.SourceSansBold
+            arrow.TextSize = 14
+
+            local dropdownBtn = Instance.new("TextButton", dropdownFrame)
+            dropdownBtn.Size = UDim2.new(1, 0, 1, 0)
+            dropdownBtn.BackgroundTransparency = 1
+            dropdownBtn.Text = ""
+
+            local optionsFrame = Instance.new("Frame", dropdownFrame)
+            optionsFrame.Size = UDim2.new(1, 0, 0, 0)
+            optionsFrame.Position = UDim2.new(0, 0, 1, 5)
+            optionsFrame.BackgroundColor3 = Theme.Section
+            optionsFrame.Visible = false
+            optionsFrame.ClipsDescendants = true
+            Instance.new("UICorner", optionsFrame).CornerRadius = UDim.new(0,6)
+
+            local UIListLayout = Instance.new("UIListLayout", optionsFrame)
+            UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+            local opened = false
+            local selected = default
+
+            local function updateOptions()
+                for i, v in ipairs(optionsFrame:GetChildren()) do
+                    if v:IsA("TextButton") then
+                        v:Destroy()
+                    end
+                end
+
+                for i, option in ipairs(options) do
+                    local optionBtn = Instance.new("TextButton", optionsFrame)
+                    optionBtn.Size = UDim2.new(1, 0, 0, 30)
+                    optionBtn.BackgroundColor3 = i == selected and Theme.Element or Theme.Section
+                    optionBtn.Text = option
+                    optionBtn.TextColor3 = Theme.Text
+                    optionBtn.Font = Enum.Font.SourceSans
+                    optionBtn.TextSize = 14
+                    optionBtn.LayoutOrder = i
+                    
+                    optionBtn.MouseButton1Click:Connect(function()
+                        selected = i
+                        dropdownLabel.Text = text .. ": " .. option
+                        optionsFrame.Visible = false
+                        opened = false
+                        arrow.Text = "▼"
+                        if callback then callback(option, i) end
+                    end)
+                end
+                
+                optionsFrame.Size = UDim2.new(1, 0, 0, #options * 30)
+            end
+
+            updateOptions()
+
+            dropdownBtn.MouseButton1Click:Connect(function()
+                opened = not opened
+                optionsFrame.Visible = opened
+                arrow.Text = opened and "▲" or "▼"
+            end)
+
+            return {
+                Frame = dropdownFrame,
+                GetSelection = function() return selected, options[selected] end,
+                SetSelection = function(index)
+                    if index >= 1 and index <= #options then
+                        selected = index
+                        dropdownLabel.Text = text .. ": " .. options[index]
+                        if callback then callback(options[index], index) end
+                    end
+                end
+            }
         end
     }
     
@@ -343,7 +446,7 @@ function SyrexUI:CreateTab(name)
     return tabData
 end
 
--- Close / Minimize
+-- Close / Minimize - FIXED
 CloseBtn.MouseButton1Click:Connect(function()
     Gui.Enabled = false
 end)
@@ -351,16 +454,25 @@ end)
 local minimized = false
 MinBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
-    for _, t in pairs(SyrexUI.Tabs) do
-        t.content.Visible = not minimized
+    if minimized then
+        -- Hide all tab contents when minimized
+        for _, t in pairs(SyrexUI.Tabs) do
+            t.content.Visible = false
+        end
+        MainFrame.Size = UDim2.new(0,260,0,34)
+    else
+        -- Show only the active tab when restored
+        for _, t in pairs(SyrexUI.Tabs) do
+            t.content.Visible = (t.button.BackgroundColor3 == Theme.Element)
+        end
+        MainFrame.Size = UDim2.new(0,520,0,340)
     end
-    MainFrame.Size = minimized and UDim2.new(0,260,0,34) or UDim2.new(0,520,0,340)
 end)
 
--- Keybind to toggle GUI
+-- Keybind to toggle GUI - FIXED
 UserInputService.InputBegan:Connect(function(input,gp)
     if gp then return end
-    if input.KeyCode==Settings.CloseBind then
+    if input.KeyCode == Settings.CloseBind then
         Gui.Enabled = not Gui.Enabled
     end
 end)
