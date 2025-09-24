@@ -1,4 +1,4 @@
--- Syrex UI Library - Fixed Version with Dropdown
+-- Syrex UI Library - Fixed Dropdown & Keybind
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -342,7 +342,7 @@ function SyrexUI:CreateTab(name)
             }
         end,
         
-        -- NEW: AddDropdown method
+        -- FIXED: AddDropdown with rounded selection
         AddDropdown = function(self, text, options, default, callback)
             local yOffset = (#self.content:GetChildren() - 1)*42
             
@@ -376,12 +376,13 @@ function SyrexUI:CreateTab(name)
             dropdownBtn.BackgroundTransparency = 1
             dropdownBtn.Text = ""
 
-            local optionsFrame = Instance.new("Frame", dropdownFrame)
-            optionsFrame.Size = UDim2.new(1, 0, 0, 0)
-            optionsFrame.Position = UDim2.new(0, 0, 1, 5)
+            local optionsFrame = Instance.new("Frame", self.content)
+            optionsFrame.Size = UDim2.new(0.9, 0, 0, 0)
+            optionsFrame.Position = UDim2.new(0, 0, 0, yOffset + 41)
             optionsFrame.BackgroundColor3 = Theme.Section
             optionsFrame.Visible = false
             optionsFrame.ClipsDescendants = true
+            optionsFrame.ZIndex = 2
             Instance.new("UICorner", optionsFrame).CornerRadius = UDim.new(0,6)
 
             local UIListLayout = Instance.new("UIListLayout", optionsFrame)
@@ -406,6 +407,8 @@ function SyrexUI:CreateTab(name)
                     optionBtn.Font = Enum.Font.SourceSans
                     optionBtn.TextSize = 14
                     optionBtn.LayoutOrder = i
+                    optionBtn.ZIndex = 3
+                    Instance.new("UICorner", optionBtn).CornerRadius = UDim.new(0,4)
                     
                     optionBtn.MouseButton1Click:Connect(function()
                         selected = i
@@ -426,6 +429,23 @@ function SyrexUI:CreateTab(name)
                 opened = not opened
                 optionsFrame.Visible = opened
                 arrow.Text = opened and "▲" or "▼"
+                
+                -- Close other dropdowns when opening this one
+                if opened then
+                    for _, child in pairs(self.content:GetChildren()) do
+                        if child:IsA("Frame") and child ~= dropdownFrame and child ~= optionsFrame and child.Name ~= "" then
+                            local otherArrow = child:FindFirstChildWhichIsA("TextLabel", true)
+                            if otherArrow and otherArrow.Text == "▲" then
+                                otherArrow.Text = "▼"
+                                for _, grandchild in pairs(self.content:GetChildren()) do
+                                    if grandchild:IsA("Frame") and grandchild.Position.Y.Offset > child.Position.Y.Offset and grandchild.Position.Y.Offset < child.Position.Y.Offset + 100 then
+                                        grandchild.Visible = false
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
             end)
 
             return {
@@ -446,7 +466,7 @@ function SyrexUI:CreateTab(name)
     return tabData
 end
 
--- Close / Minimize - FIXED
+-- Close / Minimize
 CloseBtn.MouseButton1Click:Connect(function()
     Gui.Enabled = false
 end)
@@ -469,13 +489,15 @@ MinBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Keybind to toggle GUI - FIXED
-UserInputService.InputBegan:Connect(function(input,gp)
+-- FIXED: Keybind to toggle GUI - Now properly checks the keybind
+local function handleKeybind(input, gp)
     if gp then return end
     if input.KeyCode == Settings.CloseBind then
         Gui.Enabled = not Gui.Enabled
     end
-end)
+end
+
+UserInputService.InputBegan:Connect(handleKeybind)
 
 -- Make draggable
 MakeDraggable(TopBar, MainFrame)
