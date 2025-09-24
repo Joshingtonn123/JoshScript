@@ -1,4 +1,4 @@
--- Syrex UI Library - Fixed Keybind & Centered Elements
+-- Syrex UI Library - With GUI Toggle Keybind Setting
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -208,13 +208,13 @@ function SyrexUI:CreateTab(name)
             local yOffset = getYOffset()
             local btn = Instance.new("TextButton", self.content)
             btn.Size = UDim2.new(0.9,0,0,36)
-            btn.Position = UDim2.new(0.05,0,0,yOffset) -- Centered
+            btn.Position = UDim2.new(0.05,0,0,yOffset)
             btn.BackgroundColor3 = Theme.Section
             btn.Font = Enum.Font.SourceSansBold
             btn.TextColor3 = Theme.Text
             btn.TextSize = 18
             btn.Text = text
-            btn.TextXAlignment = Enum.TextXAlignment.Center -- Center text
+            btn.TextXAlignment = Enum.TextXAlignment.Center
             Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
             btn.MouseButton1Click:Connect(callback)
             elementCount = elementCount + 1
@@ -225,13 +225,13 @@ function SyrexUI:CreateTab(name)
             local yOffset = getYOffset()
             local toggle = Instance.new("TextButton", self.content)
             toggle.Size = UDim2.new(0.9,0,0,36)
-            toggle.Position = UDim2.new(0.05,0,0,yOffset) -- Centered
+            toggle.Position = UDim2.new(0.05,0,0,yOffset)
             toggle.BackgroundColor3 = Theme.Section
             toggle.Font = Enum.Font.SourceSansBold
             toggle.TextColor3 = Theme.Text
             toggle.TextSize = 18
             toggle.Text = text..": "..(default and "ON" or "OFF")
-            toggle.TextXAlignment = Enum.TextXAlignment.Center -- Center text
+            toggle.TextXAlignment = Enum.TextXAlignment.Center
             Instance.new("UICorner", toggle).CornerRadius = UDim.new(0,6)
 
             local state = default
@@ -249,7 +249,7 @@ function SyrexUI:CreateTab(name)
             local yOffset = getYOffset()
             local sliderFrame = Instance.new("Frame", self.content)
             sliderFrame.Size = UDim2.new(0.9,0,0,32)
-            sliderFrame.Position = UDim2.new(0.05,0,0,yOffset) -- Centered
+            sliderFrame.Position = UDim2.new(0.05,0,0,yOffset)
             sliderFrame.BackgroundTransparency = 1
 
             local bar = Instance.new("Frame", sliderFrame)
@@ -297,7 +297,7 @@ function SyrexUI:CreateTab(name)
             
             local keybindFrame = Instance.new("Frame", self.content)
             keybindFrame.Size = UDim2.new(0.9, 0, 0, 24)
-            keybindFrame.Position = UDim2.new(0.05, 0, 0, yOffset) -- Centered
+            keybindFrame.Position = UDim2.new(0.05, 0, 0, yOffset)
             keybindFrame.BackgroundTransparency = 1
 
             local bindLabel = Instance.new("TextLabel", keybindFrame)
@@ -355,12 +355,62 @@ function SyrexUI:CreateTab(name)
             }
         end,
         
+        -- NEW: AddToggleKeybind method specifically for GUI toggle
+        AddToggleKeybind = function(self, text, defaultKey)
+            local yOffset = getYOffset()
+            
+            local keybindFrame = Instance.new("Frame", self.content)
+            keybindFrame.Size = UDim2.new(0.9, 0, 0, 24)
+            keybindFrame.Position = UDim2.new(0.05, 0, 0, yOffset)
+            keybindFrame.BackgroundTransparency = 1
+
+            local bindLabel = Instance.new("TextLabel", keybindFrame)
+            bindLabel.Position = UDim2.new(0, 0, 0, 0)
+            bindLabel.Size = UDim2.new(0.6, 0, 1, 0)
+            bindLabel.BackgroundTransparency = 1
+            bindLabel.Font = Enum.Font.SourceSans
+            bindLabel.Text = text .. ": " .. tostring(Settings.CloseBind)
+            bindLabel.TextColor3 = Theme.Text
+            bindLabel.TextSize = 14
+            bindLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+            local setBindBtn = Instance.new("TextButton", keybindFrame)
+            setBindBtn.Position = UDim2.new(0.62, 0, 0, 0)
+            setBindBtn.Size = UDim2.new(0.36, 0, 1, 0)
+            setBindBtn.BackgroundColor3 = Theme.Element
+            setBindBtn.Font = Enum.Font.SourceSansBold
+            setBindBtn.Text = "Set Bind"
+            setBindBtn.TextColor3 = Theme.Text
+            Instance.new("UICorner", setBindBtn).CornerRadius = UDim.new(0, 6)
+            
+            setBindBtn.MouseButton1Click:Connect(function()
+                setBindBtn.Text = "Press a key..."
+                local conn
+                conn = UserInputService.InputBegan:Connect(function(input, gp)
+                    if gp then return end
+                    if input.KeyCode ~= Enum.KeyCode.Unknown then
+                        Settings.CloseBind = input.KeyCode
+                        bindLabel.Text = text .. ": " .. tostring(Settings.CloseBind)
+                        setBindBtn.Text = "Set Bind"
+                        conn:Disconnect()
+                    end
+                end)
+                delay(8, function()
+                    if conn and conn.Connected then
+                        conn:Disconnect()
+                        setBindBtn.Text = "Set Bind"
+                    end
+                end)
+            end)
+            elementCount = elementCount + 1
+        end,
+        
         AddDropdown = function(self, text, options, default, callback)
             local yOffset = getYOffset()
             
             local dropdownFrame = Instance.new("Frame", self.content)
             dropdownFrame.Size = UDim2.new(0.9, 0, 0, 36)
-            dropdownFrame.Position = UDim2.new(0.05, 0, 0, yOffset) -- Centered
+            dropdownFrame.Position = UDim2.new(0.05, 0, 0, yOffset)
             dropdownFrame.BackgroundColor3 = Theme.Section
             Instance.new("UICorner", dropdownFrame).CornerRadius = UDim.new(0,6)
 
@@ -390,7 +440,7 @@ function SyrexUI:CreateTab(name)
 
             local optionsFrame = Instance.new("Frame", self.content)
             optionsFrame.Size = UDim2.new(0.9, 0, 0, 0)
-            optionsFrame.Position = UDim2.new(0.05, 0, 0, yOffset + 41) -- Centered
+            optionsFrame.Position = UDim2.new(0.05, 0, 0, yOffset + 41)
             optionsFrame.BackgroundColor3 = Theme.Section
             optionsFrame.Visible = false
             optionsFrame.ClipsDescendants = true
@@ -420,7 +470,7 @@ function SyrexUI:CreateTab(name)
                     optionBtn.TextSize = 14
                     optionBtn.LayoutOrder = i
                     optionBtn.ZIndex = 3
-                    optionBtn.TextXAlignment = Enum.TextXAlignment.Center -- Center dropdown options
+                    optionBtn.TextXAlignment = Enum.TextXAlignment.Center
                     Instance.new("UICorner", optionBtn).CornerRadius = UDim.new(0,4)
                     
                     optionBtn.MouseButton1Click:Connect(function()
@@ -461,13 +511,13 @@ function SyrexUI:CreateTab(name)
             local yOffset = getYOffset()
             local label = Instance.new("TextLabel", self.content)
             label.Size = UDim2.new(0.9, 0, 0, 24)
-            label.Position = UDim2.new(0.05, 0, 0, yOffset) -- Centered
+            label.Position = UDim2.new(0.05, 0, 0, yOffset)
             label.BackgroundTransparency = 1
             label.Text = text
             label.TextColor3 = Theme.Text
             label.Font = Enum.Font.SourceSans
             label.TextSize = 14
-            label.TextXAlignment = Enum.TextXAlignment.Center -- Center label text
+            label.TextXAlignment = Enum.TextXAlignment.Center
             elementCount = elementCount + 1
             return label
         end
@@ -498,13 +548,11 @@ MinBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- FIXED: Keybind to toggle GUI - This should work now!
-local connection
-connection = UserInputService.InputBegan:Connect(function(input, gp)
+-- Keybind to toggle GUI - THIS NOW WORKS!
+UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Settings.CloseBind then
         Gui.Enabled = not Gui.Enabled
-        print("GUI toggled! Enabled:", Gui.Enabled)
     end
 end)
 
