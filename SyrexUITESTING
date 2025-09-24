@@ -1,4 +1,4 @@
--- Syrex UI Library - Fixed Dropdown & Keybind
+-- Syrex UI Library - Fixed Element Display
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -150,8 +150,11 @@ Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0,6)
 local SyrexUI = {Tabs = {}, Gui = Gui}
 
 -- CreateWindow
-function SyrexUI:CreateWindow(name)
+function SyrexUI:CreateWindow(name, toggleKey)
     Title.Text = name or Title.Text
+    if toggleKey then
+        Settings.CloseBind = toggleKey
+    end
     return self
 end
 
@@ -191,12 +194,18 @@ function SyrexUI:CreateTab(name)
         btn.BackgroundColor3 = Theme.Element
     end
 
+    local elementCount = 0
+    
+    local function getYOffset()
+        return elementCount * 42
+    end
+
     local tabData = {
         button = btn, 
         content = content,
         
         AddButton = function(self, text, callback)
-            local yOffset = (#self.content:GetChildren() - 1)*42
+            local yOffset = getYOffset()
             local btn = Instance.new("TextButton", self.content)
             btn.Size = UDim2.new(0.9,0,0,36)
             btn.Position = UDim2.new(0,0,0,yOffset)
@@ -207,11 +216,12 @@ function SyrexUI:CreateTab(name)
             btn.Text = text
             Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
             btn.MouseButton1Click:Connect(callback)
+            elementCount = elementCount + 1
             return btn
         end,
         
         AddToggle = function(self, text, default, callback)
-            local yOffset = (#self.content:GetChildren() - 1)*42
+            local yOffset = getYOffset()
             local toggle = Instance.new("TextButton", self.content)
             toggle.Size = UDim2.new(0.9,0,0,36)
             toggle.Position = UDim2.new(0,0,0,yOffset)
@@ -229,11 +239,12 @@ function SyrexUI:CreateTab(name)
                 toggle.BackgroundColor3 = state and Theme.Element or Theme.Section
                 if callback then callback(state) end
             end)
+            elementCount = elementCount + 1
             return toggle
         end,
         
         AddSlider = function(self, text, min, max, default, callback)
-            local yOffset = (#self.content:GetChildren() - 1)*42
+            local yOffset = getYOffset()
             local sliderFrame = Instance.new("Frame", self.content)
             sliderFrame.Size = UDim2.new(0.9,0,0,32)
             sliderFrame.Position = UDim2.new(0,0,0,yOffset)
@@ -275,12 +286,12 @@ function SyrexUI:CreateTab(name)
                     if callback then callback(val) end
                 end
             end)
-
+            elementCount = elementCount + 1
             return sliderFrame
         end,
         
         AddKeybind = function(self, text, defaultKey, callback)
-            local yOffset = (#self.content:GetChildren() - 1)*42
+            local yOffset = getYOffset()
             
             local keybindFrame = Instance.new("Frame", self.content)
             keybindFrame.Size = UDim2.new(0.9, 0, 0, 24)
@@ -328,7 +339,7 @@ function SyrexUI:CreateTab(name)
                     end
                 end)
             end)
-
+            elementCount = elementCount + 1
             return {
                 Frame = keybindFrame,
                 Label = bindLabel,
@@ -342,9 +353,8 @@ function SyrexUI:CreateTab(name)
             }
         end,
         
-        -- FIXED: AddDropdown with rounded selection
         AddDropdown = function(self, text, options, default, callback)
-            local yOffset = (#self.content:GetChildren() - 1)*42
+            local yOffset = getYOffset()
             
             local dropdownFrame = Instance.new("Frame", self.content)
             dropdownFrame.Size = UDim2.new(0.9, 0, 0, 36)
@@ -429,25 +439,8 @@ function SyrexUI:CreateTab(name)
                 opened = not opened
                 optionsFrame.Visible = opened
                 arrow.Text = opened and "▲" or "▼"
-                
-                -- Close other dropdowns when opening this one
-                if opened then
-                    for _, child in pairs(self.content:GetChildren()) do
-                        if child:IsA("Frame") and child ~= dropdownFrame and child ~= optionsFrame and child.Name ~= "" then
-                            local otherArrow = child:FindFirstChildWhichIsA("TextLabel", true)
-                            if otherArrow and otherArrow.Text == "▲" then
-                                otherArrow.Text = "▼"
-                                for _, grandchild in pairs(self.content:GetChildren()) do
-                                    if grandchild:IsA("Frame") and grandchild.Position.Y.Offset > child.Position.Y.Offset and grandchild.Position.Y.Offset < child.Position.Y.Offset + 100 then
-                                        grandchild.Visible = false
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
             end)
-
+            elementCount = elementCount + 1
             return {
                 Frame = dropdownFrame,
                 GetSelection = function() return selected, options[selected] end,
@@ -459,6 +452,21 @@ function SyrexUI:CreateTab(name)
                     end
                 end
             }
+        end,
+        
+        AddLabel = function(self, text)
+            local yOffset = getYOffset()
+            local label = Instance.new("TextLabel", self.content)
+            label.Size = UDim2.new(0.9, 0, 0, 24)
+            label.Position = UDim2.new(0, 0, 0, yOffset)
+            label.BackgroundTransparency = 1
+            label.Text = text
+            label.TextColor3 = Theme.Text
+            label.Font = Enum.Font.SourceSans
+            label.TextSize = 14
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            elementCount = elementCount + 1
+            return label
         end
     }
     
@@ -475,13 +483,11 @@ local minimized = false
 MinBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     if minimized then
-        -- Hide all tab contents when minimized
         for _, t in pairs(SyrexUI.Tabs) do
             t.content.Visible = false
         end
         MainFrame.Size = UDim2.new(0,260,0,34)
     else
-        -- Show only the active tab when restored
         for _, t in pairs(SyrexUI.Tabs) do
             t.content.Visible = (t.button.BackgroundColor3 == Theme.Element)
         end
@@ -489,15 +495,13 @@ MinBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- FIXED: Keybind to toggle GUI - Now properly checks the keybind
-local function handleKeybind(input, gp)
+-- Keybind to toggle GUI
+UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Settings.CloseBind then
         Gui.Enabled = not Gui.Enabled
     end
-end
-
-UserInputService.InputBegan:Connect(handleKeybind)
+end)
 
 -- Make draggable
 MakeDraggable(TopBar, MainFrame)
