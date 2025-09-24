@@ -1,4 +1,4 @@
--- Syrex UI Library - With GUI Toggle Keybind Setting
+-- Syrex UI Library - With Key System
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
 
 local Theme = {
     Background = Color3.fromRGB(9,9,13),
@@ -18,7 +19,11 @@ local Theme = {
     Text = Color3.fromRGB(255,255,255),
 }
 
-local Settings = {CloseBind = Enum.KeyCode.RightControl}
+local Settings = {
+    CloseBind = Enum.KeyCode.RightControl,
+    KeySystem = true, -- Enable key system
+    CorrectKey = "6769" -- Default key
+}
 
 -- Create draggable function
 local function MakeDraggable(topbar, frame)
@@ -60,13 +65,98 @@ Gui.Name = "SyrexUILib"
 Gui.Parent = CoreGui
 Gui.ResetOnSpawn = false
 
--- Main GUI
+-- Key System GUI (Shows first)
+local KeySystemGui = Instance.new("ScreenGui")
+KeySystemGui.Name = "SyrexKeySystem"
+KeySystemGui.Parent = CoreGui
+KeySystemGui.ResetOnSpawn = false
+
+-- Key System Main Frame
+local KeyFrame = Instance.new("Frame")
+KeyFrame.Size = UDim2.new(0, 400, 0, 250)
+KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -125)
+KeyFrame.BackgroundColor3 = Theme.Background
+KeyFrame.Parent = KeySystemGui
+Instance.new("UICorner", KeyFrame).CornerRadius = UDim.new(0,6)
+
+-- Key System Title
+local KeyTitle = Instance.new("TextLabel", KeyFrame)
+KeyTitle.Size = UDim2.new(1, 0, 0, 50)
+KeyTitle.Position = UDim2.new(0, 0, 0, 10)
+KeyTitle.BackgroundTransparency = 1
+KeyTitle.Text = "Syrex UI Library"
+KeyTitle.TextColor3 = Theme.Text
+KeyTitle.Font = Enum.Font.FredokaOne
+KeyTitle.TextSize = 24
+
+-- Key Note
+local KeyNote = Instance.new("TextLabel", KeyFrame)
+KeyNote.Size = UDim2.new(1, 0, 0, 30)
+KeyNote.Position = UDim2.new(0, 0, 0, 60)
+KeyNote.BackgroundTransparency = 1
+KeyNote.Text = "Key is: 6769"
+KeyNote.TextColor3 = Theme.Text
+KeyNote.Font = Enum.Font.SourceSans
+KeyNote.TextSize = 16
+
+-- Key Input Frame
+local KeyInputFrame = Instance.new("Frame", KeyFrame)
+KeyInputFrame.Size = UDim2.new(0.8, 0, 0, 40)
+KeyInputFrame.Position = UDim2.new(0.1, 0, 0, 100)
+KeyInputFrame.BackgroundColor3 = Theme.Section
+Instance.new("UICorner", KeyInputFrame).CornerRadius = UDim.new(0,6)
+
+local KeyTextBox = Instance.new("TextBox", KeyInputFrame)
+KeyTextBox.Size = UDim2.new(0.7, 0, 1, 0)
+KeyTextBox.Position = UDim2.new(0, 10, 0, 0)
+KeyTextBox.BackgroundTransparency = 1
+KeyTextBox.TextColor3 = Theme.Text
+KeyTextBox.Font = Enum.Font.SourceSans
+KeyTextBox.TextSize = 18
+KeyTextBox.PlaceholderText = "Enter key..."
+KeyTextBox.PlaceholderColor3 = Color3.fromRGB(200,200,200)
+KeyTextBox.Text = ""
+
+local KeySubmit = Instance.new("TextButton", KeyInputFrame)
+KeySubmit.Size = UDim2.new(0.25, 0, 0.7, 0)
+KeySubmit.Position = UDim2.new(0.75, 0, 0.15, 0)
+KeySubmit.BackgroundColor3 = Theme.Element
+KeySubmit.Text = "Submit"
+KeySubmit.TextColor3 = Theme.Text
+KeySubmit.Font = Enum.Font.SourceSansBold
+KeySubmit.TextSize = 16
+Instance.new("UICorner", KeySubmit).CornerRadius = UDim.new(0,6)
+
+-- Key Error Message
+local KeyError = Instance.new("TextLabel", KeyFrame)
+KeyError.Size = UDim2.new(1, 0, 0, 30)
+KeyError.Position = UDim2.new(0, 0, 0, 150)
+KeyError.BackgroundTransparency = 1
+KeyError.Text = ""
+KeyError.TextColor3 = Color3.fromRGB(255, 100, 100)
+KeyError.Font = Enum.Font.SourceSans
+KeyError.TextSize = 14
+KeyError.Visible = false
+
+-- Copy Key Button
+local CopyKeyBtn = Instance.new("TextButton", KeyFrame)
+CopyKeyBtn.Size = UDim2.new(0.4, 0, 0, 30)
+CopyKeyBtn.Position = UDim2.new(0.3, 0, 0, 190)
+CopyKeyBtn.BackgroundColor3 = Theme.Element
+CopyKeyBtn.Text = "Copy Key Link"
+CopyKeyBtn.TextColor3 = Theme.Text
+CopyKeyBtn.Font = Enum.Font.SourceSansBold
+CopyKeyBtn.TextSize = 14
+Instance.new("UICorner", CopyKeyBtn).CornerRadius = UDim.new(0,6)
+
+-- Main GUI (Hidden until key is correct)
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0,520,0,340)
 MainFrame.Position = UDim2.new(0.5,-260,0.5,-170)
 MainFrame.BackgroundColor3 = Theme.Background
 MainFrame.Active = true
 MainFrame.Parent = Gui
+MainFrame.Visible = false
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,6)
 
 -- Floating Tab Bar
@@ -75,6 +165,7 @@ TabFrame.Size = UDim2.new(0,100,0,340)
 TabFrame.Position = UDim2.new(0.5,-370,0.5,-170)
 TabFrame.BackgroundColor3 = Theme.Background
 TabFrame.Parent = Gui
+TabFrame.Visible = false
 Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,6)
 
 -- Floating tab offset
@@ -86,7 +177,7 @@ end
 local tabOffset = getOffset()
 
 RunService.RenderStepped:Connect(function()
-    if not independent then
+    if not independent and TabFrame.Visible then
         local newPos = Vector2.new(MainFrame.AbsolutePosition.X+tabOffset.X, MainFrame.AbsolutePosition.Y+tabOffset.Y)
         TabFrame.Position = UDim2.fromOffset(newPos.X,newPos.Y)
     end
@@ -147,7 +238,51 @@ MinBtn.TextSize = 18
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0,6)
 
 -- Library Table
-local SyrexUI = {Tabs = {}, Gui = Gui}
+local SyrexUI = {Tabs = {}, Gui = Gui, KeySystemGui = KeySystemGui}
+
+-- Key System Functionality
+local function checkKey(inputKey)
+    return inputKey == Settings.CorrectKey
+end
+
+KeySubmit.MouseButton1Click:Connect(function()
+    local enteredKey = KeyTextBox.Text
+    if checkKey(enteredKey) then
+        -- Correct key
+        KeySystemGui.Enabled = false
+        Gui.Enabled = true
+        MainFrame.Visible = true
+        TabFrame.Visible = true
+    else
+        -- Wrong key
+        KeyError.Text = "Invalid key! Please try again."
+        KeyError.Visible = true
+        wait(2)
+        KeyError.Visible = false
+    end
+end)
+
+KeyTextBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        KeySubmit.MouseButton1Click:Connect()
+    end
+end)
+
+-- Copy Key Link functionality
+CopyKeyBtn.MouseButton1Click:Connect(function()
+    local keyLink = "https://raw.githubusercontent.com/Joshingtonn123/JoshScript/refs/heads/main/SyrexUITESTING"
+    
+    -- Try to copy to clipboard
+    pcall(function()
+        setclipboard(keyLink)
+    end)
+    
+    -- Show copied message
+    local originalText = CopyKeyBtn.Text
+    CopyKeyBtn.Text = "Copied!"
+    wait(1)
+    CopyKeyBtn.Text = originalText
+end)
 
 -- CreateWindow
 function SyrexUI:CreateWindow(name, toggleKey)
@@ -155,6 +290,18 @@ function SyrexUI:CreateWindow(name, toggleKey)
     if toggleKey then
         Settings.CloseBind = toggleKey
     end
+    
+    -- Only show key system if enabled
+    if Settings.KeySystem then
+        Gui.Enabled = false
+        KeySystemGui.Enabled = true
+    else
+        KeySystemGui.Enabled = false
+        Gui.Enabled = true
+        MainFrame.Visible = true
+        TabFrame.Visible = true
+    end
+    
     return self
 end
 
@@ -355,8 +502,7 @@ function SyrexUI:CreateTab(name)
             }
         end,
         
-        -- NEW: AddToggleKeybind method specifically for GUI toggle
-        AddToggleKeybind = function(self, text, defaultKey)
+        AddToggleKeybind = function(self, text)
             local yOffset = getYOffset()
             
             local keybindFrame = Instance.new("Frame", self.content)
@@ -548,7 +694,7 @@ MinBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Keybind to toggle GUI - THIS NOW WORKS!
+-- Keybind to toggle GUI
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Settings.CloseBind then
