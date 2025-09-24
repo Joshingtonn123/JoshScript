@@ -1,4 +1,4 @@
--- Syrex UI Library - Modular Version (Floating Tabs Preserved)
+-- Syrex UI Library
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
