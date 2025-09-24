@@ -1,4 +1,4 @@
--- Syrex UI Library - With Key System & Toggle Button
+-- Syrex UI Library - With Configurable Key System
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -21,6 +21,13 @@ local Theme = {
 
 local Settings = {
     CloseBind = Enum.KeyCode.RightControl,
+}
+
+-- Key System Configuration
+local KeySystemConfig = {
+    Enabled = false, -- Set to true to enable key system
+    KeyLink = "https://raw.githubusercontent.com/Joshingtonn123/JoshScript/refs/heads/main/SyrexUITESTING", -- Your script link
+    CorrectKey = "6769" -- The key users need to enter
 }
 
 -- Create draggable function
@@ -104,7 +111,7 @@ local KeyNote = Instance.new("TextLabel", KeyFrame)
 KeyNote.Size = UDim2.new(1, 0, 0, 30)
 KeyNote.Position = UDim2.new(0, 0, 0, 60)
 KeyNote.BackgroundTransparency = 1
-KeyNote.Text = "Key is: 6769"
+KeyNote.Text = "Key is: " .. KeySystemConfig.CorrectKey
 KeyNote.TextColor3 = Theme.Text
 KeyNote.Font = Enum.Font.SourceSans
 KeyNote.TextSize = 16
@@ -178,18 +185,47 @@ TabFrame.Parent = Gui
 TabFrame.Visible = false
 Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,6)
 
--- GUI Toggle Button (for mobile/non-keyboard users)
+-- GUI Toggle Button (for mobile/non-keyboard users) - FIXED: Now draggable and persistent
 local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
-ToggleBtn.Position = UDim2.new(0, 10, 0.5, -25)
+ToggleBtn.Size = UDim2.new(0, 60, 0, 30)
+ToggleBtn.Position = UDim2.new(0, 10, 0.5, -15)
 ToggleBtn.BackgroundColor3 = Theme.Element
-ToggleBtn.Text = "☰"
+ToggleBtn.Text = "Close"
 ToggleBtn.TextColor3 = Theme.Text
 ToggleBtn.Font = Enum.Font.SourceSansBold
-ToggleBtn.TextSize = 20
+ToggleBtn.TextSize = 14
 ToggleBtn.Visible = false
 ToggleBtn.Parent = Gui
+ToggleBtn.ZIndex = 10
 Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0,6)
+
+-- Make toggle button draggable
+local ToggleDragging = false
+local ToggleDragStart = nil
+local ToggleStartPos = nil
+
+ToggleBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        ToggleDragging = true
+        ToggleDragStart = input.Position
+        ToggleStartPos = ToggleBtn.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                ToggleDragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if ToggleDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local Delta = input.Position - ToggleDragStart
+        ToggleBtn.Position = UDim2.new(
+            ToggleStartPos.X.Scale, ToggleStartPos.X.Offset + Delta.X,
+            ToggleStartPos.Y.Scale, ToggleStartPos.Y.Offset + Delta.Y
+        )
+    end
+end)
 
 -- Floating tab offset
 local independent = false
@@ -261,11 +297,16 @@ MinBtn.TextSize = 18
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0,6)
 
 -- Library Table
-local SyrexUI = {Tabs = {}, Gui = Gui, KeySystemGui = KeySystemGui}
+local SyrexUI = {
+    Tabs = {}, 
+    Gui = Gui, 
+    KeySystemGui = KeySystemGui,
+    Config = KeySystemConfig
+}
 
 -- Key System Functionality
 local function checkKey(inputKey)
-    return inputKey == "6769" -- Hardcoded key
+    return inputKey == KeySystemConfig.CorrectKey
 end
 
 KeySubmit.MouseButton1Click:Connect(function()
@@ -277,6 +318,7 @@ KeySubmit.MouseButton1Click:Connect(function()
         MainFrame.Visible = true
         TabFrame.Visible = true
         ToggleBtn.Visible = true
+        ToggleBtn.Text = "Close"
     else
         -- Wrong key
         KeyError.Text = "Invalid key! Please try again."
@@ -299,11 +341,9 @@ end)
 
 -- Copy Key Link functionality
 CopyKeyBtn.MouseButton1Click:Connect(function()
-    local keyLink = "https://raw.githubusercontent.com/Joshingtonn123/JoshScript/refs/heads/main/SyrexUITESTING"
-    
     -- Try to copy to clipboard
     pcall(function()
-        setclipboard(keyLink)
+        setclipboard(KeySystemConfig.KeyLink)
     end)
     
     -- Show copied message
@@ -313,20 +353,22 @@ CopyKeyBtn.MouseButton1Click:Connect(function()
     CopyKeyBtn.Text = originalText
 end)
 
--- Toggle Button functionality
+-- Toggle Button functionality - FIXED: Now changes text and stays visible
 ToggleBtn.MouseButton1Click:Connect(function()
     Gui.Enabled = not Gui.Enabled
+    if Gui.Enabled then
+        ToggleBtn.Text = "Close"
+    else
+        ToggleBtn.Text = "Open"
+    end
 end)
 
--- CreateWindow with KeySystem parameter
-function SyrexUI:CreateWindow(name, keySystemEnabled)
+-- CreateWindow with configurable KeySystem
+function SyrexUI:CreateWindow(name)
     Title.Text = name or Title.Text
     
-    -- Set key system based on parameter
-    local useKeySystem = keySystemEnabled or false -- Default to false if not specified
-    
-    -- Only show key system if enabled
-    if useKeySystem then
+    -- Only show key system if enabled in config
+    if KeySystemConfig.Enabled then
         Gui.Enabled = false
         KeySystemGui.Enabled = true
         ToggleBtn.Visible = false
@@ -336,8 +378,22 @@ function SyrexUI:CreateWindow(name, keySystemEnabled)
         MainFrame.Visible = true
         TabFrame.Visible = true
         ToggleBtn.Visible = true
+        ToggleBtn.Text = "Close"
     end
     
+    return self
+end
+
+-- Method to configure KeySystem
+function SyrexUI:KeySystem(enabled, keyLink, correctKey)
+    KeySystemConfig.Enabled = enabled or false
+    if keyLink then
+        KeySystemConfig.KeyLink = keyLink
+    end
+    if correctKey then
+        KeySystemConfig.CorrectKey = correctKey
+        KeyNote.Text = "Key is: " .. correctKey
+    end
     return self
 end
 
@@ -712,6 +768,7 @@ end
 -- Close / Minimize
 CloseBtn.MouseButton1Click:Connect(function()
     Gui.Enabled = false
+    ToggleBtn.Text = "Open"
 end)
 
 local minimized = false
@@ -735,6 +792,11 @@ UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Settings.CloseBind then
         Gui.Enabled = not Gui.Enabled
+        if Gui.Enabled then
+            ToggleBtn.Text = "Close"
+        else
+            ToggleBtn.Text = "Open"
+        end
     end
 end)
 
