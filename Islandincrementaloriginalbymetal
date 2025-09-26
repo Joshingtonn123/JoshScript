@@ -1,0 +1,275 @@
+setclipboard("https://discord.gg/TR3quUFgT6")
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+
+-- All remote events
+local remotes = {
+    -- Stats
+    PowerRE = ReplicatedStorage.Remotes.PowerRE,
+    EnergyRE = ReplicatedStorage.Remotes.EnergyRE,
+    DiamondsRE = ReplicatedStorage.Remotes.DiamondsRE,
+    CoinsRE = ReplicatedStorage.Remotes.CoinsRE,
+    WindRE = ReplicatedStorage.Remotes.WindRE,
+    LuckRE = ReplicatedStorage.Remotes.LuckRE,
+    SuperStarRE = ReplicatedStorage.Remotes.SuperStarRE,
+    StarRE = ReplicatedStorage.Remotes.StarRE,
+    TreeRE = ReplicatedStorage.Remotes.TreeRE,
+    ShadowRE = ReplicatedStorage.Remotes.ShadowRE,
+    GoldStarRE = ReplicatedStorage.Remotes.GoldStarRE,
+    DropletRE = ReplicatedStorage.Remotes.DropletRE,
+    CactusRE = ReplicatedStorage.Remotes.CactusRE,
+    SandRE = ReplicatedStorage.Remotes.SandRE,
+    SunlightRE = ReplicatedStorage.Remotes.SunlightRE,
+    SolarPanelRE = ReplicatedStorage.Remotes.SolarPanelRE,
+    GlassRE = ReplicatedStorage.Remotes.GlassRE,
+    PrismsRE = ReplicatedStorage.Remotes.PrismsRE,
+    BatteryRE = ReplicatedStorage.Remotes.BatteryRE,
+    SuperLuckRE = ReplicatedStorage.Remotes.SuperLuckRE,
+    RefractionRE = ReplicatedStorage.Remotes.RefractionRE,
+    ElectricityRE = ReplicatedStorage.Remotes.ElectricityRE,
+    CloneRE = ReplicatedStorage.Remotes.CloneRE,
+    RunicTempleRE = ReplicatedStorage.Remotes.RunicTempleRE,
+    
+    -- Crates
+    ClaimCoinGiftRE = ReplicatedStorage.Remotes.ClaimCoinGiftRE,
+    WoodCrateRE = ReplicatedStorage.Remotes.WoodCrateRE,
+    WildCrateRE = ReplicatedStorage.Remotes.WildCrateRE,
+    JewelCrateRE = ReplicatedStorage.Remotes.JewelCrateRE,
+    DesertCrateRE = ReplicatedStorage.Remotes.DesertCrateRE,
+    TempleOpenRE = ReplicatedStorage.Remotes.TempleOpenRE,
+    CryptCrateRE = ReplicatedStorage.Remotes.CryptCrateRE
+}
+
+-- Load UI library
+local SyrexUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Joshingtonn123/JoshScript/refs/heads/main/UI%20library"))()
+
+local window = SyrexUI:CreateWindow("islands incremental")
+
+-- Variables
+local toggleStates = {}
+local speed = 0.000001
+local activeConnections = {}
+
+-- Initialize all toggle states to false
+for remoteName, _ in pairs(remotes) do
+    toggleStates[remoteName] = false
+end
+
+-- Function to start/stop firing for a specific remote
+local function updateRemote(remoteName, enabled)
+    -- Stop existing connection for this remote
+    if activeConnections[remoteName] then
+        activeConnections[remoteName]:Disconnect()
+        activeConnections[remoteName] = nil
+    end
+    
+    -- Start new connection if enabled
+    if enabled and remotes[remoteName] then
+        activeConnections[remoteName] = game:GetService("RunService").Heartbeat:Connect(function()
+            pcall(function()
+                remotes[remoteName]:FireServer()
+            end)
+            wait(speed)
+        end)
+    end
+end
+
+-- Stats Tab
+local statsTab = window:CreateTab("Stats")
+
+-- Stats toggles
+statsTab:AddToggle("Power", false, function(state)
+    toggleStates.PowerRE = state
+    updateRemote("PowerRE", state)
+end)
+
+statsTab:AddToggle("Energy", false, function(state)
+    toggleStates.EnergyRE = state
+    updateRemote("EnergyRE", state)
+end)
+
+statsTab:AddToggle("Diamonds", false, function(state)
+    toggleStates.DiamondsRE = state
+    updateRemote("DiamondsRE", state)
+end)
+
+statsTab:AddToggle("Coins", false, function(state)
+    toggleStates.CoinsRE = state
+    updateRemote("CoinsRE", state)
+end)
+
+statsTab:AddToggle("Wind", false, function(state)
+    toggleStates.WindRE = state
+    updateRemote("WindRE", state)
+end)
+
+statsTab:AddToggle("Luck", false, function(state)
+    toggleStates.LuckRE = state
+    updateRemote("LuckRE", state)
+end)
+
+statsTab:AddToggle("SuperStar", false, function(state)
+    toggleStates.SuperStarRE = state
+    updateRemote("SuperStarRE", state)
+end)
+
+statsTab:AddToggle("Star", false, function(state)
+    toggleStates.StarRE = state
+    updateRemote("StarRE", state)
+end)
+
+statsTab:AddToggle("Tree", false, function(state)
+    toggleStates.TreeRE = state
+    updateRemote("TreeRE", state)
+end)
+
+statsTab:AddToggle("Shadow", false, function(state)
+    toggleStates.ShadowRE = state
+    updateRemote("ShadowRE", state)
+end)
+
+statsTab:AddToggle("GoldStar", false, function(state)
+    toggleStates.GoldStarRE = state
+    updateRemote("GoldStarRE", state)
+end)
+
+statsTab:AddToggle("Droplet", false, function(state)
+    toggleStates.DropletRE = state
+    updateRemote("DropletRE", state)
+end)
+
+statsTab:AddToggle("Cactus", false, function(state)
+    toggleStates.CactusRE = state
+    updateRemote("CactusRE", state)
+end)
+
+statsTab:AddToggle("Sand", false, function(state)
+    toggleStates.SandRE = state
+    updateRemote("SandRE", state)
+end)
+
+statsTab:AddToggle("Sunlight", false, function(state)
+    toggleStates.SunlightRE = state
+    updateRemote("SunlightRE", state)
+end)
+
+statsTab:AddToggle("SolarPanel", false, function(state)
+    toggleStates.SolarPanelRE = state
+    updateRemote("SolarPanelRE", state)
+end)
+
+statsTab:AddToggle("Glass", false, function(state)
+    toggleStates.GlassRE = state
+    updateRemote("GlassRE", state)
+end)
+
+statsTab:AddToggle("Prisms", false, function(state)
+    toggleStates.PrismsRE = state
+    updateRemote("PrismsRE", state)
+end)
+
+statsTab:AddToggle("Battery", false, function(state)
+    toggleStates.BatteryRE = state
+    updateRemote("BatteryRE", state)
+end)
+
+statsTab:AddToggle("SuperLuck", false, function(state)
+    toggleStates.SuperLuckRE = state
+    updateRemote("SuperLuckRE", state)
+end)
+
+statsTab:AddToggle("Refraction", false, function(state)
+    toggleStates.RefractionRE = state
+    updateRemote("RefractionRE", state)
+end)
+
+statsTab:AddToggle("Electricity", false, function(state)
+    toggleStates.ElectricityRE = state
+    updateRemote("ElectricityRE", state)
+end)
+
+statsTab:AddToggle("Clone", false, function(state)
+    toggleStates.CloneRE = state
+    updateRemote("CloneRE", state)
+end)
+
+statsTab:AddToggle("RunicTemple", false, function(state)
+    toggleStates.RunicTempleRE = state
+    updateRemote("RunicTempleRE", state)
+end)
+
+-- Crates Tab
+local cratesTab = window:CreateTab("Crates")
+
+-- Crates toggles
+cratesTab:AddToggle("Claim Coin Gift", false, function(state)
+    toggleStates.ClaimCoinGiftRE = state
+    updateRemote("ClaimCoinGiftRE", state)
+end)
+
+cratesTab:AddToggle("Wood Crate", false, function(state)
+    toggleStates.WoodCrateRE = state
+    updateRemote("WoodCrateRE", state)
+end)
+
+cratesTab:AddToggle("Wild Crate", false, function(state)
+    toggleStates.WildCrateRE = state
+    updateRemote("WildCrateRE", state)
+end)
+
+cratesTab:AddToggle("Jewel Crate", false, function(state)
+    toggleStates.JewelCrateRE = state
+    updateRemote("JewelCrateRE", state)
+end)
+
+cratesTab:AddToggle("Desert Crate", false, function(state)
+    toggleStates.DesertCrateRE = state
+    updateRemote("DesertCrateRE", state)
+end)
+
+cratesTab:AddToggle("Temple Open", false, function(state)
+    toggleStates.TempleOpenRE = state
+    updateRemote("TempleOpenRE", state)
+end)
+
+cratesTab:AddToggle("Crypt Crate", false, function(state)
+    toggleStates.CryptCrateRE = state
+    updateRemote("CryptCrateRE", state)
+end)
+
+-- All Tab
+local allTab = window:CreateTab("All")
+
+-- Speed control
+allTab:AddNumberBox("Speed", 0.00001, function(value)
+    speed = value
+    -- Update all active connections with new speed
+    for remoteName, connection in pairs(activeConnections) do
+        if connection then
+            connection:Disconnect()
+            if toggleStates[remoteName] then
+                updateRemote(remoteName, true)
+            end
+        end
+    end
+end)
+
+-- Enable All toggle
+allTab:AddToggle("Enable All", false, function(state)
+    if state then
+        -- Enable all toggles
+        for remoteName, _ in pairs(remotes) do
+            toggleStates[remoteName] = true
+            updateRemote(remoteName, true)
+        end
+    else
+        -- Disable all toggles
+        for remoteName, _ in pairs(remotes) do
+            toggleStates[remoteName] = false
+            updateRemote(remoteName, false)
+        end
+    end
+end)
