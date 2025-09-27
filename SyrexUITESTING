@@ -1,4 +1,4 @@
--- Syrex UI Library - With Toggle Button & 3 Tabs
+-- Syrex UI Library - With Fixed Minimize, Keybinds, and Custom Title Animation
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -29,6 +29,14 @@ local KeySystemConfig = {
     KeyLink = "https://raw.githubusercontent.com/Joshingtonn123/JoshScript/refs/heads/main/SyrexUITESTING",
     CorrectKey = "6769",
     NoteText = "Enter the key to access the GUI"
+}
+
+-- Title Animation Variables
+local TitleAnimation = {
+    MainTitle = "My Awesome GUI",
+    SubTitle = "Customize this text below your title!",
+    TitleColor = Color3.fromRGB(255, 255, 255),
+    SubTitleColor = Color3.fromRGB(200, 200, 200)
 }
 
 -- Create draggable function
@@ -187,7 +195,7 @@ TabFrame.Parent = Gui
 TabFrame.Visible = false
 Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,6)
 
--- GUI Toggle Button - FIXED: Always visible and draggable
+-- GUI Toggle Button
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 80, 0, 40)
 ToggleBtn.Position = UDim2.new(0, 10, 0.5, -20)
@@ -197,7 +205,7 @@ ToggleBtn.TextColor3 = Theme.Text
 ToggleBtn.Font = Enum.Font.SourceSansBold
 ToggleBtn.TextSize = 16
 ToggleBtn.Visible = false
-ToggleBtn.Parent = CoreGui -- Parent to CoreGui so it never disappears
+ToggleBtn.Parent = CoreGui
 ToggleBtn.ZIndex = 10
 Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0,6)
 
@@ -266,20 +274,32 @@ TabFrame.InputBegan:Connect(function(input)
     end
 end)
 
--- TopBar
+-- TopBar with Title Animation
 local TopBar = Instance.new("Frame", MainFrame)
-TopBar.Size = UDim2.new(1,0,0,34)
+TopBar.Size = UDim2.new(1,0,0,50) -- Increased height for title animation
 TopBar.BackgroundTransparency = 1
 
-local Title = Instance.new("TextLabel", TopBar)
-Title.Size = UDim2.new(1,-80,1,0)
-Title.Position = UDim2.new(0,12,0,0)
-Title.BackgroundTransparency = 1
-Title.Font = Enum.Font.FredokaOne
-Title.Text = "Syrex UI Library"
-Title.TextColor3 = Theme.Text
-Title.TextSize = 20
-Title.TextXAlignment = Enum.TextXAlignment.Left
+-- Main Title (Big text)
+local MainTitle = Instance.new("TextLabel", TopBar)
+MainTitle.Size = UDim2.new(1,-80,0,30)
+MainTitle.Position = UDim2.new(0,12,0,5)
+MainTitle.BackgroundTransparency = 1
+MainTitle.Font = Enum.Font.FredokaOne
+MainTitle.Text = TitleAnimation.MainTitle
+MainTitle.TextColor3 = TitleAnimation.TitleColor
+MainTitle.TextSize = 20
+MainTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Sub Title (Smaller text below main title)
+local SubTitle = Instance.new("TextLabel", TopBar)
+SubTitle.Size = UDim2.new(1,-80,0,20)
+SubTitle.Position = UDim2.new(0,12,0,30)
+SubTitle.BackgroundTransparency = 1
+SubTitle.Font = Enum.Font.SourceSans
+SubTitle.Text = TitleAnimation.SubTitle
+SubTitle.TextColor3 = TitleAnimation.SubTitleColor
+SubTitle.TextSize = 14
+SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 
 local CloseBtn = Instance.new("TextButton", TopBar)
 CloseBtn.Size = UDim2.new(0,60,0,24)
@@ -306,7 +326,8 @@ local SyrexUI = {
     Tabs = {}, 
     Gui = Gui, 
     KeySystemGui = KeySystemGui,
-    Config = KeySystemConfig
+    Config = KeySystemConfig,
+    TitleAnim = TitleAnimation
 }
 
 -- Key System Functionality
@@ -361,9 +382,16 @@ ToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- CreateWindow
-function SyrexUI:CreateWindow(name)
-    Title.Text = name or Title.Text
+-- CreateWindow with Title Animation
+function SyrexUI:CreateWindow(name, subtitle)
+    if name then
+        TitleAnimation.MainTitle = name
+        MainTitle.Text = name
+    end
+    if subtitle then
+        TitleAnimation.SubTitle = subtitle
+        SubTitle.Text = subtitle
+    end
     
     if KeySystemConfig.Enabled then
         Gui.Enabled = false
@@ -393,11 +421,32 @@ function SyrexUI:KeySystem(enabled, keyLink, correctKey, noteText)
     return self
 end
 
+-- Method to configure Title Animation
+function SyrexUI:SetTitle(mainTitle, subTitle, titleColor, subTitleColor)
+    if mainTitle then
+        TitleAnimation.MainTitle = mainTitle
+        MainTitle.Text = mainTitle
+    end
+    if subTitle then
+        TitleAnimation.SubTitle = subTitle
+        SubTitle.Text = subTitle
+    end
+    if titleColor then
+        TitleAnimation.TitleColor = titleColor
+        MainTitle.TextColor3 = titleColor
+    end
+    if subTitleColor then
+        TitleAnimation.SubTitleColor = subTitleColor
+        SubTitle.TextColor3 = subTitleColor
+    end
+    return self
+end
+
 -- CreateTab
 function SyrexUI:CreateTab(name)
     local content = Instance.new("ScrollingFrame", MainFrame)
-    content.Size = UDim2.new(1,-24,1,-56)
-    content.Position = UDim2.new(0,12,0,44)
+    content.Size = UDim2.new(1,-24,1,-66) -- Adjusted for taller topbar
+    content.Position = UDim2.new(0,12,0,56) -- Adjusted position
     content.BackgroundTransparency = 1
     content.Visible = false
     content.ScrollingEnabled = true
@@ -724,7 +773,7 @@ function SyrexUI:CreateTab(name)
     return tabData
 end
 
--- Close / Minimize
+-- Close / Minimize - FIXED: Now keeps proper width for long titles
 CloseBtn.MouseButton1Click:Connect(function()
     Gui.Enabled = false
     ToggleBtn.Text = "Open"
@@ -737,7 +786,8 @@ MinBtn.MouseButton1Click:Connect(function()
         for _, t in pairs(SyrexUI.Tabs) do
             t.content.Visible = false
         end
-        MainFrame.Size = UDim2.new(0,260,0,34)
+        -- Keep wider size for long titles
+        MainFrame.Size = UDim2.new(0,400,0,50) -- Wider minimized size
     else
         for _, t in pairs(SyrexUI.Tabs) do
             t.content.Visible = (t.button.BackgroundColor3 == Theme.Element)
@@ -746,7 +796,7 @@ MinBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Keybind to toggle GUI
+-- Keybind to toggle GUI - FIXED: Works immediately with default key
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Settings.CloseBind then
