@@ -1,70 +1,193 @@
---Syrex UI Library
-local SyrexUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Joshingtonn123/JoshScript/refs/heads/main/SyrexUITESTING"))()
+-- // Syrex UI Library with Title Animation + Fixed Keybinds + Minimize Fix
+-- // Fully Mobile Friendly
 
--- Configure UI appearance (optional)
-SyrexUI:UI(
-    "Syrex Hub", -- Title
-    "Premium Script Hub", -- Subtitle
-    24, -- Title size
-    14  -- Subtitle size
-)
+if game.CoreGui:FindFirstChild("SyrexUILib") then
+    game.CoreGui.SyrexUILib:Destroy()
+end
 
--- Key System with custom settings
-SyrexUI:KeySystem(
-    true, -- Enable key system (true/false)
-    "https://your-discord-link-here.com", -- Your custom link
-    "1234", -- Your custom key
-    "Join our Discord for the key!" -- Your custom note
-)
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
--- Create window with title and subtitle
-local window = SyrexUI:CreateWindow("Syrex Hub", "Premium Script Hub")
+local SyrexUI = {}
+SyrexUI.Tabs = {}
 
--- Tab 1
-local tab1 = window:CreateTab("Tab1")
+-- Main ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SyrexUILib"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-tab1:AddToggle("Toggle", false, function(state)
-    -- put function here
-    if state then
-        print("Toggle enabled!")
+-- Main Frame
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 520, 0, 340)
+MainFrame.Position = UDim2.new(0.5, -260, 0.5, -170)
+MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
+
+-- Top Bar
+local TopBar = Instance.new("Frame", MainFrame)
+TopBar.Size = UDim2.new(1, 0, 0, 40)
+TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+
+local Title = Instance.new("TextLabel", TopBar)
+Title.Size = UDim2.new(1, -80, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Syrex UI"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.FredokaOne
+Title.TextSize = 20
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Minimize Button
+local MinBtn = Instance.new("TextButton", TopBar)
+MinBtn.Size = UDim2.new(0, 40, 0, 40)
+MinBtn.Position = UDim2.new(1, -80, 0, 0)
+MinBtn.BackgroundTransparency = 1
+MinBtn.Text = "-"
+MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinBtn.Font = Enum.Font.FredokaOne
+MinBtn.TextSize = 24
+
+-- Close Button
+local CloseBtn = Instance.new("TextButton", TopBar)
+CloseBtn.Size = UDim2.new(0, 40, 0, 40)
+CloseBtn.Position = UDim2.new(1, -40, 0, 0)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+CloseBtn.Font = Enum.Font.FredokaOne
+CloseBtn.TextSize = 24
+
+-- Title + Subtitle System
+local TitleFrame = Instance.new("Frame", MainFrame)
+TitleFrame.Size = UDim2.new(1, 0, 0, 60)
+TitleFrame.Position = UDim2.new(0, 0, 0, 40)
+TitleFrame.BackgroundTransparency = 1
+
+local AnimatedTitle = Instance.new("TextLabel", TitleFrame)
+AnimatedTitle.Size = UDim2.new(1, 0, 0, 36)
+AnimatedTitle.Position = UDim2.new(0, 0, 0, 0)
+AnimatedTitle.BackgroundTransparency = 1
+AnimatedTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+AnimatedTitle.Font = Enum.Font.FredokaOne
+AnimatedTitle.TextSize = 28
+AnimatedTitle.TextTransparency = 1
+
+local Subtitle = Instance.new("TextLabel", TitleFrame)
+Subtitle.Size = UDim2.new(1, 0, 0, 20)
+Subtitle.Position = UDim2.new(0, 0, 0, 36)
+Subtitle.BackgroundTransparency = 1
+Subtitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+Subtitle.Font = Enum.Font.SourceSansItalic
+Subtitle.TextSize = 16
+Subtitle.TextTransparency = 1
+
+local function AnimateTitle(text, subtext)
+    AnimatedTitle.Text = text or "My Awesome GUI V2"
+    Subtitle.Text = subtext or ""
+    AnimatedTitle.TextTransparency = 1
+    Subtitle.TextTransparency = 1
+    TweenService:Create(AnimatedTitle, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
+    wait(0.3)
+    TweenService:Create(Subtitle, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
+end
+
+-- Minimize Logic
+local Minimized = false
+MinBtn.MouseButton1Click:Connect(function()
+    Minimized = not Minimized
+    if Minimized then
+        TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 520, 0, 40)}):Play()
+        for _, child in pairs(MainFrame:GetChildren()) do
+            if child ~= TopBar then
+                child.Visible = false
+            end
+        end
     else
-        print("Toggle disabled!")
+        TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 520, 0, 340)}):Play()
+        for _, child in pairs(MainFrame:GetChildren()) do
+            child.Visible = true
+        end
     end
 end)
 
-tab1:AddButton("Button", function()
-    -- put function here
-    print("Teleporting to base...")
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
 end)
 
-tab1:AddToggleKeybind("GUI Toggle Key")
+-- Window + Tabs
+function SyrexUI:CreateWindow(name, subtitle)
+    Title.Text = name or "Syrex UI"
+    AnimateTitle(name, subtitle)
+    return self
+end
 
--- Tab 2
-local tab2 = window:CreateTab("Tab2")
+function SyrexUI:CreateTab(name)
+    local Tab = {}
+    Tab.Keybinds = {}
 
-tab2:AddSlider("Slider", 16, 200, 16, function(val)
-    -- put function here
-    print("Slider set to:", val)
-end)
+    local Btn = Instance.new("TextButton", MainFrame)
+    Btn.Size = UDim2.new(0, 120, 0, 30)
+    Btn.Position = UDim2.new(0, 10 + (#self.Tabs * 130), 0, 110)
+    Btn.Text = name
+    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 
-tab2:AddNumberBox("Number Box", 50, function(value)
-    -- put function here
-    print("Number box set to:", value)
-end)
+    local Content = Instance.new("Frame", MainFrame)
+    Content.Size = UDim2.new(1, -140, 1, -120)
+    Content.Position = UDim2.new(0, 130, 0, 100)
+    Content.BackgroundTransparency = 1
+    Content.Visible = false
 
--- Tab 3
-local tab3 = window:CreateTab("Tab3")
+    Btn.MouseButton1Click:Connect(function()
+        for _, tab in pairs(self.Tabs) do
+            tab.Content.Visible = false
+        end
+        Content.Visible = true
+    end)
 
-tab3:AddLabel("Made by Josh")
-tab3:AddLabel("Version 2.0")
-tab3:AddLabel("Enjoy the UI library")
+    Tab.Content = Content
+    table.insert(self.Tabs, {Button = Btn, Content = Content, Keybinds = Tab.Keybinds})
 
-tab3:AddKeybind("Noclip Key", Enum.KeyCode.N, function(key)
-    -- put function here
-    print("Noclip key set to:", key)
-end)
+    -- Example element makers
+    function Tab:AddButton(text, callback)
+        local b = Instance.new("TextButton", Content)
+        b.Size = UDim2.new(0, 200, 0, 30)
+        b.Text = text
+        b.MouseButton1Click:Connect(callback)
+    end
 
-tab3:AddKeybind("Speed Key", Enum.KeyCode.B, function(key)
-    -- put function here
-    print("Speed key set to:", key)
+    function Tab:AddToggle(text, default, callback)
+        local state = default
+        local b = Instance.new("TextButton", Content)
+        b.Size = UDim2.new(0, 200, 0, 30)
+        b.Text = text .. ": " .. tostring(state)
+        b.MouseButton1Click:Connect(function()
+            state = not state
+            b.Text = text .. ": " .. tostring(state)
+            callback(state)
+        end)
+    end
+
+    function Tab:AddKeybind(text, defaultKey, callback)
+        local bind = {Key = defaultKey, Callback = callback}
+        table.insert(Tab.Keybinds, bind)
+    end
+
+    return Tab
+end
+
+-- Keybinds work immediately
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    for _, tab in pairs(SyrexUI.Tabs) do
+        for _, bind in pairs(tab.Keybinds) do
+            if input.KeyCode == bind.Key then
+                bind.Callback(input.KeyCode)
+            end
+        end
+    end
 end)
