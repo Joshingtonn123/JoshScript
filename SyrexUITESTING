@@ -1,4 +1,4 @@
--- Syrex UI Library - Fixed Loading Version
+-- Syrex UI Library - Fixed Draggable & Better Format
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -24,9 +24,6 @@ local UIConfig = {
     Title = "SyrexUI",
     Subtitle = "SyrexUI", 
     LoadingText = "SyrexUI",
-    TitleSize = 24,
-    SubtitleSize = 14,
-    LoadingTextSize = 16,
 }
 
 -- ScreenGui
@@ -50,17 +47,17 @@ LoadingTitle.BackgroundTransparency = 1
 LoadingTitle.Text = UIConfig.Title
 LoadingTitle.TextColor3 = Theme.Text
 LoadingTitle.Font = Enum.Font.FredokaOne
-LoadingTitle.TextSize = UIConfig.TitleSize
+LoadingTitle.TextSize = 28
 LoadingTitle.TextXAlignment = Enum.TextXAlignment.Center
 
 local LoadingSubtitle = Instance.new("TextLabel", LoadingFrame)
-LoadingSubtitle.Size = UDim2.new(1, -40, 0, 30)
+LoadingSubtitle.Size = UDim2.new(1, -40, 0, 40)
 LoadingSubtitle.Position = UDim2.new(0, 20, 0, 90)
 LoadingSubtitle.BackgroundTransparency = 1
 LoadingSubtitle.Text = UIConfig.LoadingText
 LoadingSubtitle.TextColor3 = Color3.fromRGB(200,200,200)
 LoadingSubtitle.Font = Enum.Font.SourceSans
-LoadingSubtitle.TextSize = UIConfig.LoadingTextSize
+LoadingSubtitle.TextSize = 20  -- Bigger text size
 LoadingSubtitle.TextXAlignment = Enum.TextXAlignment.Center
 
 local LoadingBar = Instance.new("Frame", LoadingFrame)
@@ -114,6 +111,8 @@ local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Size = UDim2.new(1,0,0,60)
 TopBar.BackgroundTransparency = 1
 TopBar.Active = true
+TopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TopBar.BackgroundTransparency = 0.5  -- Semi-transparent for debugging
 
 local TitleContainer = Instance.new("Frame", TopBar)
 TitleContainer.Size = UDim2.new(1,-120,1,0)
@@ -127,7 +126,7 @@ Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.FredokaOne
 Title.Text = UIConfig.Title
 Title.TextColor3 = Theme.Text
-Title.TextSize = UIConfig.TitleSize
+Title.TextSize = 24
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.TextYAlignment = Enum.TextYAlignment.Bottom
 
@@ -138,7 +137,7 @@ Subtitle.BackgroundTransparency = 1
 Subtitle.Font = Enum.Font.SourceSans
 Subtitle.Text = UIConfig.Subtitle
 Subtitle.TextColor3 = Color3.fromRGB(200,200,200)
-Subtitle.TextSize = UIConfig.SubtitleSize
+Subtitle.TextSize = 14
 Subtitle.TextXAlignment = Enum.TextXAlignment.Left
 Subtitle.TextYAlignment = Enum.TextYAlignment.Top
 
@@ -168,7 +167,7 @@ local SyrexUI = {
     UIConfig = UIConfig
 }
 
--- SIMPLE Draggable Function
+-- FIXED DRAGGABLE FUNCTION
 local function MakeDraggable(topbar, frame)
     local dragging = false
     local dragStart, startPos
@@ -178,31 +177,27 @@ local function MakeDraggable(topbar, frame)
             dragging = true
             dragStart = input.Position
             startPos = frame.Position
-            
-            local connection
-            connection = input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                    connection:Disconnect()
-                end
-            end)
+        end
+    end)
+
+    topbar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
         end
     end)
 
     UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            if dragging then
+                local delta = input.Position - dragStart
+                frame.Position = UDim2.new(
+                    startPos.X.Scale, startPos.X.Offset + delta.X,
+                    startPos.Y.Scale, startPos.Y.Offset + delta.Y
+                )
+            end
         end
     end)
 end
-
--- Apply draggable immediately
-MakeDraggable(TopBar, MainFrame)
-MakeDraggable(TabFrame, TabFrame)
 
 -- Make toggle button draggable
 local toggleDragging = false
@@ -213,24 +208,24 @@ ToggleBtn.InputBegan:Connect(function(input)
         toggleDragging = true
         toggleDragStart = input.Position
         toggleStartPos = ToggleBtn.Position
-        
-        local connection
-        connection = input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                toggleDragging = false
-                connection:Disconnect()
-            end
-        end)
+    end
+end)
+
+ToggleBtn.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        toggleDragging = false
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if toggleDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - toggleDragStart
-        ToggleBtn.Position = UDim2.new(
-            toggleStartPos.X.Scale, toggleStartPos.X.Offset + delta.X,
-            toggleStartPos.Y.Scale, toggleStartPos.Y.Offset + delta.Y
-        )
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        if toggleDragging then
+            local delta = input.Position - toggleDragStart
+            ToggleBtn.Position = UDim2.new(
+                toggleStartPos.X.Scale, toggleStartPos.X.Offset + delta.X,
+                toggleStartPos.Y.Scale, toggleStartPos.Y.Offset + delta.Y
+            )
+        end
     end
 end)
 
@@ -254,23 +249,26 @@ local function showLoadingScreen()
     MainFrame.Visible = true
     TabFrame.Visible = true
     ToggleBtn.Visible = true
+    
+    -- Apply draggable AFTER UI is visible
+    MakeDraggable(TopBar, MainFrame)
+    MakeDraggable(TabFrame, TabFrame)
 end
 
--- CreateWindow
-function SyrexUI:CreateWindow(title, subtitle, loadingText)
-    if title then
-        UIConfig.Title = title
-        Title.Text = title
-        LoadingTitle.Text = title
-    end
-    if subtitle then
-        UIConfig.Subtitle = subtitle
-        Subtitle.Text = subtitle
-    end
-    if loadingText then
-        UIConfig.LoadingText = loadingText
-        LoadingSubtitle.Text = loadingText
-    end
+-- CreateWindow with better format
+function SyrexUI:CreateWindow(config)
+    local title = config and config.Title or "SyrexUI"
+    local subtitle = config and config.Subtitle or "SyrexUI"
+    local loadingText = config and config.LoadingText or "SyrexUI"
+    
+    UIConfig.Title = title
+    UIConfig.Subtitle = subtitle
+    UIConfig.LoadingText = loadingText
+    
+    Title.Text = title
+    Subtitle.Text = subtitle
+    LoadingTitle.Text = title
+    LoadingSubtitle.Text = loadingText
     
     -- Show loading screen first
     showLoadingScreen()
