@@ -1,223 +1,498 @@
--- // Syrex UI Library (with Title Animation, Subtitle, Fixed Keybinds, Better Minimize)
--- // Made for Josh 😎
-
+-- Syrex UI Library - Full Version
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
 end
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
 
-local SyrexUI = {}
-SyrexUI.Tabs = {}
+-- Theme
+local Theme = {
+    Background = Color3.fromRGB(9,9,13),
+    Section = Color3.fromRGB(0,20,40),
+    Element = Color3.fromRGB(61,133,224),
+    Text = Color3.fromRGB(255,255,255),
+}
 
--- Main ScreenGui
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "SyrexUILib"
-ScreenGui.Parent = game.CoreGui
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+local Settings = {
+    CloseBind = Enum.KeyCode.RightControl,
+}
 
--- Main Frame
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 520, 0, 340)
-MainFrame.Position = UDim2.new(0.5, -260, 0.5, -170)
-MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+-- Key System Configuration
+local KeySystemConfig = {
+    Enabled = true,
+    KeyLink = "https://raw.githubusercontent.com/Joshingtonn123/JoshScript/refs/heads/main/SyrexUITESTING",
+    CorrectKey = "6769",
+    NoteText = "Enter the key to access the GUI"
+}
+
+-- Create draggable function (topbar only)
+local function MakeDraggable(topbar, frame)
+    local Dragging, DragInput, DragStart, StartPos
+    local function Update(input)
+        local Delta = input.Position - DragStart
+        frame.Position = UDim2.new(
+            StartPos.X.Scale, StartPos.X.Offset + Delta.X,
+            StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y
+        )
+    end
+    topbar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            Dragging = true
+            DragStart = input.Position
+            StartPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    Dragging = false
+                end
+            end)
+        end
+    end)
+    topbar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            DragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == DragInput and Dragging then
+            Update(input)
+        end
+    end)
+end
+
+-- ScreenGui
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "SyrexUILib"
+Gui.Parent = CoreGui
+Gui.ResetOnSpawn = false
+Gui.Enabled = false -- enable after key
+
+-- Key System GUI
+local KeySystemGui = Instance.new("ScreenGui")
+KeySystemGui.Name = "SyrexKeySystem"
+KeySystemGui.Parent = CoreGui
+KeySystemGui.ResetOnSpawn = false
+KeySystemGui.Enabled = KeySystemConfig.Enabled
+
+-- Key System Frame
+local KeyFrame = Instance.new("Frame")
+KeyFrame.Size = UDim2.new(0, 400, 0, 250)
+KeyFrame.Position = UDim2.new(0.5, -200, 0.5, -125)
+KeyFrame.BackgroundColor3 = Theme.Background
+KeyFrame.Parent = KeySystemGui
+Instance.new("UICorner", KeyFrame).CornerRadius = UDim.new(0,6)
+
+-- Key Close
+local KeyCloseBtn = Instance.new("TextButton", KeyFrame)
+KeyCloseBtn.Size = UDim2.new(0, 30, 0, 30)
+KeyCloseBtn.Position = UDim2.new(1, -35, 0, 5)
+KeyCloseBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+KeyCloseBtn.Text = "X"
+KeyCloseBtn.TextColor3 = Theme.Text
+KeyCloseBtn.Font = Enum.Font.SourceSansBold
+KeyCloseBtn.TextSize = 18
+Instance.new("UICorner", KeyCloseBtn).CornerRadius = UDim.new(0,6)
+KeyCloseBtn.MouseButton1Click:Connect(function()
+    KeySystemGui.Enabled = false
+end)
+
+-- Key Title
+local KeyTitle = Instance.new("TextLabel", KeyFrame)
+KeyTitle.Size = UDim2.new(1, -40, 0, 50)
+KeyTitle.Position = UDim2.new(0, 10, 0, 10)
+KeyTitle.BackgroundTransparency = 1
+KeyTitle.Text = "Syrex UI Library"
+KeyTitle.TextColor3 = Theme.Text
+KeyTitle.Font = Enum.Font.FredokaOne
+KeyTitle.TextSize = 24
+
+-- Key Note
+local KeyNote = Instance.new("TextLabel", KeyFrame)
+KeyNote.Size = UDim2.new(1, 0, 0, 30)
+KeyNote.Position = UDim2.new(0, 0, 0, 60)
+KeyNote.BackgroundTransparency = 1
+KeyNote.Text = KeySystemConfig.NoteText
+KeyNote.TextColor3 = Theme.Text
+KeyNote.Font = Enum.Font.SourceSans
+KeyNote.TextSize = 16
+KeyNote.TextWrapped = true
+
+-- Key Input Frame
+local KeyInputFrame = Instance.new("Frame", KeyFrame)
+KeyInputFrame.Size = UDim2.new(0.8, 0, 0, 40)
+KeyInputFrame.Position = UDim2.new(0.1, 0, 0, 100)
+KeyInputFrame.BackgroundColor3 = Theme.Section
+Instance.new("UICorner", KeyInputFrame).CornerRadius = UDim.new(0,6)
+
+local KeyTextBox = Instance.new("TextBox", KeyInputFrame)
+KeyTextBox.Size = UDim2.new(0.7, 0, 1, 0)
+KeyTextBox.Position = UDim2.new(0, 10, 0, 0)
+KeyTextBox.BackgroundTransparency = 1
+KeyTextBox.TextColor3 = Theme.Text
+KeyTextBox.Font = Enum.Font.SourceSans
+KeyTextBox.TextSize = 18
+KeyTextBox.PlaceholderText = "Enter key..."
+KeyTextBox.PlaceholderColor3 = Color3.fromRGB(200,200,200)
+KeyTextBox.Text = ""
+
+local KeySubmit = Instance.new("TextButton", KeyInputFrame)
+KeySubmit.Size = UDim2.new(0.25, 0, 0.7, 0)
+KeySubmit.Position = UDim2.new(0.75, 0, 0.15, 0)
+KeySubmit.BackgroundColor3 = Theme.Element
+KeySubmit.Text = "Submit"
+KeySubmit.TextColor3 = Theme.Text
+KeySubmit.Font = Enum.Font.SourceSansBold
+KeySubmit.TextSize = 16
+Instance.new("UICorner", KeySubmit).CornerRadius = UDim.new(0,6)
+
+-- Key Error
+local KeyError = Instance.new("TextLabel", KeyFrame)
+KeyError.Size = UDim2.new(1, 0, 0, 30)
+KeyError.Position = UDim2.new(0, 0, 0, 150)
+KeyError.BackgroundTransparency = 1
+KeyError.Text = ""
+KeyError.TextColor3 = Color3.fromRGB(255, 100, 100)
+KeyError.Font = Enum.Font.SourceSans
+KeyError.TextSize = 14
+KeyError.Visible = false
+
+-- Copy Key
+local CopyKeyBtn = Instance.new("TextButton", KeyFrame)
+CopyKeyBtn.Size = UDim2.new(0.4, 0, 0, 30)
+CopyKeyBtn.Position = UDim2.new(0.3, 0, 0, 190)
+CopyKeyBtn.BackgroundColor3 = Theme.Element
+CopyKeyBtn.Text = "Copy Key Link"
+CopyKeyBtn.TextColor3 = Theme.Text
+CopyKeyBtn.Font = Enum.Font.SourceSansBold
+CopyKeyBtn.TextSize = 14
+Instance.new("UICorner", CopyKeyBtn).CornerRadius = UDim.new(0,6)
+CopyKeyBtn.MouseButton1Click:Connect(function()
+    setclipboard(KeySystemConfig.KeyLink)
+end)
+
+-- Key Submit Logic
+KeySubmit.MouseButton1Click:Connect(function()
+    if KeyTextBox.Text == KeySystemConfig.CorrectKey then
+        KeySystemGui.Enabled = false
+        Gui.Enabled = true
+    else
+        KeyError.Visible = true
+        KeyError.Text = "Incorrect key!"
+    end
+end)
+
+-- Main GUI
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0,520,0,340)
+MainFrame.Position = UDim2.new(0.5,-260,0.5,-170)
+MainFrame.BackgroundColor3 = Theme.Background
 MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.ClipsDescendants = true
+MainFrame.Parent = Gui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,6)
 
--- Top Bar
+-- TopBar + Title
 local TopBar = Instance.new("Frame", MainFrame)
-TopBar.Size = UDim2.new(1, 0, 0, 40)
-TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TopBar.Size = UDim2.new(1,0,0,34)
+TopBar.BackgroundTransparency = 1
+MakeDraggable(TopBar, MainFrame)
 
 local Title = Instance.new("TextLabel", TopBar)
-Title.Size = UDim2.new(1, -80, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
+Title.Size = UDim2.new(1,-80,1,0)
+Title.Position = UDim2.new(0,12,0,0)
 Title.BackgroundTransparency = 1
-Title.Text = "Syrex UI"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.FredokaOne
+Title.Text = "Syrex UI Library"
+Title.TextColor3 = Theme.Text
 Title.TextSize = 20
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
+-- Subtitle typing animation
+local Subtitle = Instance.new("TextLabel", TopBar)
+Subtitle.Size = UDim2.new(1,-80,1,0)
+Subtitle.Position = UDim2.new(0,12,0,20)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Font = Enum.Font.SourceSans
+Subtitle.TextColor3 = Theme.Element
+Subtitle.TextSize = 16
+Subtitle.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Typing Animation
+local customText = "Customizable Subtitle"
+Subtitle.Text = ""
+spawn(function()
+    for i = 1,#customText do
+        Subtitle.Text = string.sub(customText,1,i)
+        wait(0.05)
+    end
+end)
+
 -- Minimize Button
 local MinBtn = Instance.new("TextButton", TopBar)
-MinBtn.Size = UDim2.new(0, 40, 0, 40)
-MinBtn.Position = UDim2.new(1, -80, 0, 0)
-MinBtn.BackgroundTransparency = 1
+MinBtn.Size = UDim2.new(0, 30, 0, 30)
+MinBtn.Position = UDim2.new(1, -35, 0, 2)
+MinBtn.BackgroundColor3 = Theme.Element
 MinBtn.Text = "-"
-MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinBtn.Font = Enum.Font.FredokaOne
-MinBtn.TextSize = 24
+MinBtn.TextColor3 = Theme.Text
+MinBtn.Font = Enum.Font.SourceSansBold
+MinBtn.TextSize = 20
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0,6)
 
--- Close Button
-local CloseBtn = Instance.new("TextButton", TopBar)
-CloseBtn.Size = UDim2.new(0, 40, 0, 40)
-CloseBtn.Position = UDim2.new(1, -40, 0, 0)
-CloseBtn.BackgroundTransparency = 1
-CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
-CloseBtn.Font = Enum.Font.FredokaOne
-CloseBtn.TextSize = 24
-
--- Title + Subtitle System
-local TitleFrame = Instance.new("Frame", MainFrame)
-TitleFrame.Size = UDim2.new(1, 0, 0, 60)
-TitleFrame.Position = UDim2.new(0, 0, 0, 40)
-TitleFrame.BackgroundTransparency = 1
-
-local AnimatedTitle = Instance.new("TextLabel", TitleFrame)
-AnimatedTitle.Size = UDim2.new(1, 0, 0, 36)
-AnimatedTitle.Position = UDim2.new(0, 0, 0, 0)
-AnimatedTitle.BackgroundTransparency = 1
-AnimatedTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-AnimatedTitle.Font = Enum.Font.FredokaOne
-AnimatedTitle.TextSize = 28
-AnimatedTitle.TextTransparency = 1
-
-local Subtitle = Instance.new("TextLabel", TitleFrame)
-Subtitle.Size = UDim2.new(1, 0, 0, 20)
-Subtitle.Position = UDim2.new(0, 0, 0, 36)
-Subtitle.BackgroundTransparency = 1
-Subtitle.TextColor3 = Color3.fromRGB(180, 180, 180)
-Subtitle.Font = Enum.Font.SourceSansItalic
-Subtitle.TextSize = 16
-Subtitle.TextTransparency = 1
-
-local function AnimateTitle(text, subtext)
-    AnimatedTitle.Text = text or "My Awesome GUI V2"
-    Subtitle.Text = subtext or ""
-    AnimatedTitle.TextTransparency = 1
-    Subtitle.TextTransparency = 1
-    TweenService:Create(AnimatedTitle, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
-    wait(0.3)
-    TweenService:Create(Subtitle, TweenInfo.new(0.6, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
-end
-
--- Minimize Logic
-local Minimized = false
+local minimized = false
 MinBtn.MouseButton1Click:Connect(function()
-    Minimized = not Minimized
-    if Minimized then
-        TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 520, 0, 40)}):Play()
-        for _, child in pairs(MainFrame:GetChildren()) do
-            if child ~= TopBar then
-                child.Visible = false
-            end
-        end
+    minimized = not minimized
+    if minimized then
+        MainFrame.Size = UDim2.new(0, 520, 0, 34)
     else
-        TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = UDim2.new(0, 520, 0, 340)}):Play()
-        for _, child in pairs(MainFrame:GetChildren()) do
-            child.Visible = true
-        end
+        MainFrame.Size = UDim2.new(0, 520, 0, 340)
     end
 end)
 
-CloseBtn.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
+-- Floating Tabs
+local TabFrame = Instance.new("Frame")
+TabFrame.Size = UDim2.new(0,100,0,340)
+TabFrame.Position = UDim2.new(0.5,-370,0.5,-170)
+TabFrame.BackgroundColor3 = Theme.Background
+TabFrame.Parent = Gui
+Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,6)
+
+-- Floating tab sync logic
+local tabOffset = Vector2.new(-110,0)
+RunService.RenderStepped:Connect(function()
+    TabFrame.Position = UDim2.fromOffset(MainFrame.AbsolutePosition.X+tabOffset.X, MainFrame.AbsolutePosition.Y+tabOffset.Y)
 end)
 
--- Window + Tabs
-function SyrexUI:CreateWindow(name, subtitle)
-    Title.Text = name or "Syrex UI"
-    AnimateTitle(name, subtitle)
-    return self
-end
+TabFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        tabOffset = Vector2.new(TabFrame.AbsolutePosition.X-MainFrame.AbsolutePosition.X, TabFrame.AbsolutePosition.Y-MainFrame.AbsolutePosition.Y)
+    end
+end)
 
-function SyrexUI:CreateTab(name)
-    local Tab = {}
-    Tab.Keybinds = {}
+-- Toggle Button to open GUI
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 80, 0, 40)
+ToggleBtn.Position = UDim2.new(0, 10, 0.5, -20)
+ToggleBtn.BackgroundColor3 = Theme.Element
+ToggleBtn.Text = "Open"
+ToggleBtn.TextColor3 = Theme.Text
+ToggleBtn.Font = Enum.Font.SourceSansBold
+ToggleBtn.TextSize = 16
+ToggleBtn.Parent = CoreGui
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0,6)
+ToggleBtn.MouseButton1Click:Connect(function()
+    Gui.Enabled = not Gui.Enabled
+end)
 
-    local Btn = Instance.new("TextButton", MainFrame)
-    Btn.Size = UDim2.new(0, 120, 0, 30)
-    Btn.Position = UDim2.new(0, 10 + (#self.Tabs * 130), 0, 110)
-    Btn.Text = name
-    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+-- Module system
+local Tabs = {}
+local function CreateTab(tabName)
+    local tabButton = Instance.new("TextButton", TabFrame)
+    tabButton.Size = UDim2.new(1, -10, 0, 40)
+    tabButton.Position = UDim2.new(0, 5, 0, (#Tabs)*45+5)
+    tabButton.BackgroundColor3 = Theme.Section
+    tabButton.Text = tabName
+    tabButton.TextColor3 = Theme.Text
+    tabButton.Font = Enum.Font.SourceSansBold
+    tabButton.TextSize = 16
+    Instance.new("UICorner", tabButton).CornerRadius = UDim.new(0,6)
 
-    local Content = Instance.new("Frame", MainFrame)
-    Content.Size = UDim2.new(1, -140, 1, -120)
-    Content.Position = UDim2.new(0, 130, 0, 100)
-    Content.BackgroundTransparency = 1
-    Content.Visible = false
+    local tabContent = Instance.new("Frame", MainFrame)
+    tabContent.Size = UDim2.new(1, -20, 1, -50)
+    tabContent.Position = UDim2.new(0,10,0,40)
+    tabContent.BackgroundTransparency = 1
+    tabContent.Visible = false
 
-    Btn.MouseButton1Click:Connect(function()
-        for _, tab in pairs(self.Tabs) do
-            tab.Content.Visible = false
+    tabButton.MouseButton1Click:Connect(function()
+        for _,v in pairs(MainFrame:GetChildren()) do
+            if v:IsA("Frame") and v ~= TopBar then
+                v.Visible = false
+            end
         end
-        Content.Visible = true
+        tabContent.Visible = true
     end)
 
-    Tab.Content = Content
-    table.insert(self.Tabs, {Button = Btn, Content = Content, Keybinds = Tab.Keybinds})
-
-    -- Elements
-    function Tab:AddButton(text, callback)
-        local b = Instance.new("TextButton", Content)
-        b.Size = UDim2.new(0, 200, 0, 30)
-        b.Text = text
-        b.MouseButton1Click:Connect(callback)
-    end
-
-    function Tab:AddToggle(text, default, callback)
-        local state = default
-        local b = Instance.new("TextButton", Content)
-        b.Size = UDim2.new(0, 200, 0, 30)
-        b.Text = text .. ": " .. tostring(state)
-        b.MouseButton1Click:Connect(function()
-            state = not state
-            b.Text = text .. ": " .. tostring(state)
-            callback(state)
-        end)
-    end
-
-    function Tab:AddSlider(text, min, max, default, callback)
-        local value = default
-        local s = Instance.new("TextButton", Content)
-        s.Size = UDim2.new(0, 200, 0, 30)
-        s.Text = text .. ": " .. value
-        s.MouseButton1Click:Connect(function()
-            value = math.clamp(value + 1, min, max)
-            s.Text = text .. ": " .. value
-            callback(value)
-        end)
-    end
-
-    function Tab:AddNumberBox(text, default, callback)
-        local box = Instance.new("TextBox", Content)
-        box.Size = UDim2.new(0, 200, 0, 30)
-        box.Text = tostring(default)
-        box.FocusLost:Connect(function()
-            local val = tonumber(box.Text)
-            if val then
-                callback(val)
-            end
-        end)
-    end
-
-    function Tab:AddKeybind(text, defaultKey, callback)
-        local bind = {Key = defaultKey, Callback = callback}
-        table.insert(Tab.Keybinds, bind)
-    end
-
-    function Tab:AddLabel(text)
-        local l = Instance.new("TextLabel", Content)
-        l.Size = UDim2.new(0, 200, 0, 30)
-        l.Text = text
-    end
-
-    return Tab
+    table.insert(Tabs,{Button = tabButton, Content = tabContent})
+    return tabContent
 end
 
--- Keybinds work immediately
-UserInputService.InputBegan:Connect(function(input, gp)
-    if gp then return end
-    for _, tab in pairs(SyrexUI.Tabs) do
-        for _, bind in pairs(tab.Keybinds) do
-            if input.KeyCode == bind.Key then
-                bind.Callback(input.KeyCode)
-            end
+-- Modular elements
+local function AddButton(tab, name, callback)
+    local btn = Instance.new("TextButton", tab)
+    btn.Size = UDim2.new(1, -20, 0, 35)
+    btn.Position = UDim2.new(0, 10, 0, (#tab:GetChildren()-1)*40)
+    btn.BackgroundColor3 = Theme.Element
+    btn.Text = name
+    btn.TextColor3 = Theme.Text
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 16
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+    btn.MouseButton1Click:Connect(callback)
+end
+
+local function AddToggle(tab, name, default, callback)
+    local frame = Instance.new("Frame", tab)
+    frame.Size = UDim2.new(1, -20, 0, 35)
+    frame.Position = UDim2.new(0, 10, 0, (#tab:GetChildren()-1)*40)
+    frame.BackgroundColor3 = Theme.Section
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,6)
+
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(0.7,0,1,0)
+    label.Position = UDim2.new(0,5,0,0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Theme.Text
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 16
+    label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local toggleBtn = Instance.new("TextButton", frame)
+    toggleBtn.Size = UDim2.new(0.25,0,0.8,0)
+    toggleBtn.Position = UDim2.new(0.7,5,0.1,0)
+    toggleBtn.BackgroundColor3 = default and Theme.Element or Theme.Section
+    toggleBtn.Text = ""
+    Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,6)
+
+    local toggled = default
+    toggleBtn.MouseButton1Click:Connect(function()
+        toggled = not toggled
+        toggleBtn.BackgroundColor3 = toggled and Theme.Element or Theme.Section
+        callback(toggled)
+    end)
+end
+
+local function AddSlider(tab, name, min, max, default, callback)
+    local frame = Instance.new("Frame", tab)
+    frame.Size = UDim2.new(1, -20, 0, 35)
+    frame.Position = UDim2.new(0, 10, 0, (#tab:GetChildren()-1)*40)
+    frame.BackgroundColor3 = Theme.Section
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,6)
+
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(0.7,0,1,0)
+    label.Position = UDim2.new(0,5,0,0)
+    label.BackgroundTransparency = 1
+    label.Text = name.." : "..tostring(default)
+    label.TextColor3 = Theme.Text
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 16
+    label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local slider = Instance.new("TextButton", frame)
+    slider.Size = UDim2.new(0.25,0,0.8,0)
+    slider.Position = UDim2.new(0.7,5,0.1,0)
+    slider.BackgroundColor3 = Theme.Element
+    slider.Text = tostring(default)
+    Instance.new("UICorner", slider).CornerRadius = UDim.new(0,6)
+
+    local dragging = false
+    slider.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
         end
-    end
-end)
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mouseX = input.Position.X
+            local sliderPos = math.clamp(mouseX - slider.AbsolutePosition.X,0,slider.AbsoluteSize.X)
+            local value = math.floor((sliderPos/slider.AbsoluteSize.X)*(max-min)+min)
+            label.Text = name.." : "..tostring(value)
+            slider.Text = tostring(value)
+            callback(value)
+        end
+    end)
+end
+
+local function AddNumberBox(tab, name, default, callback)
+    local frame = Instance.new("Frame", tab)
+    frame.Size = UDim2.new(1, -20, 0, 35)
+    frame.Position = UDim2.new(0, 10, 0, (#tab:GetChildren()-1)*40)
+    frame.BackgroundColor3 = Theme.Section
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,6)
+
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(0.5,0,1,0)
+    label.Position = UDim2.new(0,5,0,0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Theme.Text
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 16
+    label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local box = Instance.new("TextBox", frame)
+    box.Size = UDim2.new(0.45,0,0.8,0)
+    box.Position = UDim2.new(0.5,5,0.1,0)
+    box.BackgroundColor3 = Theme.Element
+    box.TextColor3 = Theme.Text
+    box.Text = tostring(default)
+    box.Font = Enum.Font.SourceSans
+    box.TextSize = 16
+    box.ClearTextOnFocus = false
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0,6)
+
+    box.FocusLost:Connect(function()
+        local num = tonumber(box.Text)
+        if num then
+            callback(num)
+        else
+            box.Text = tostring(default)
+        end
+    end)
+end
+
+local function AddKeybind(tab, name, defaultKey, callback)
+    local frame = Instance.new("Frame", tab)
+    frame.Size = UDim2.new(1, -20, 0, 35)
+    frame.Position = UDim2.new(0, 10, 0, (#tab:GetChildren()-1)*40)
+    frame.BackgroundColor3 = Theme.Section
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,6)
+
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(0.6,0,1,0)
+    label.Position = UDim2.new(0,5,0,0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Theme.Text
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 16
+    label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local keyBtn = Instance.new("TextButton", frame)
+    keyBtn.Size = UDim2.new(0.35,0,0.8,0)
+    keyBtn.Position = UDim2.new(0.6,5,0.1,0)
+    keyBtn.BackgroundColor3 = Theme.Element
+    keyBtn.Text = defaultKey.Name
+    Instance.new("UICorner", keyBtn).CornerRadius = UDim.new(0,6)
+
+    local waitingForKey = false
+    keyBtn.MouseButton1Click:Connect(function()
+        keyBtn.Text = "Press Key..."
+        waitingForKey = true
+    end)
+
+    UserInputService.InputBegan:Connect(function(input)
+        if waitingForKey and input.UserInputType == Enum.UserInputType.Keyboard then
+            keyBtn.Text = input.KeyCode.Name
+            waitingForKey = false
+            callback(input.KeyCode)
+        end
+    end)
+end
+
+-- Example usage
+local Tab1 = CreateTab("Main")
+AddButton(Tab1,"Test Button",function() print("Button clicked!") end)
+AddToggle(Tab1,"Test Toggle",true,function(state) print("Toggle:",state) end)
+AddSlider(Tab1,"Test Slider",0,100,50,function(value) print("Slider:",value) end)
+AddNumberBox(Tab1,"Test NumberBox",100,function(num) print("Number:",num) end)
+AddKeybind(Tab1,"Test Keybind",Enum.KeyCode.F,function(key) print("Keybind:",key) end)
+
+Gui.Enabled = not KeySystemConfig.Enabled
