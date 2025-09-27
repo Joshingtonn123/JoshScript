@@ -1,5 +1,5 @@
--- // Syrex UI Library with Title Animation + Fixed Keybinds + Minimize Fix
--- // Fully Mobile Friendly
+-- // Syrex UI Library (with Title Animation, Subtitle, Fixed Keybinds, Better Minimize)
+-- // Made for Josh 😎
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -152,7 +152,7 @@ function SyrexUI:CreateTab(name)
     Tab.Content = Content
     table.insert(self.Tabs, {Button = Btn, Content = Content, Keybinds = Tab.Keybinds})
 
-    -- Example element makers
+    -- Elements
     function Tab:AddButton(text, callback)
         local b = Instance.new("TextButton", Content)
         b.Size = UDim2.new(0, 200, 0, 30)
@@ -172,9 +172,39 @@ function SyrexUI:CreateTab(name)
         end)
     end
 
+    function Tab:AddSlider(text, min, max, default, callback)
+        local value = default
+        local s = Instance.new("TextButton", Content)
+        s.Size = UDim2.new(0, 200, 0, 30)
+        s.Text = text .. ": " .. value
+        s.MouseButton1Click:Connect(function()
+            value = math.clamp(value + 1, min, max)
+            s.Text = text .. ": " .. value
+            callback(value)
+        end)
+    end
+
+    function Tab:AddNumberBox(text, default, callback)
+        local box = Instance.new("TextBox", Content)
+        box.Size = UDim2.new(0, 200, 0, 30)
+        box.Text = tostring(default)
+        box.FocusLost:Connect(function()
+            local val = tonumber(box.Text)
+            if val then
+                callback(val)
+            end
+        end)
+    end
+
     function Tab:AddKeybind(text, defaultKey, callback)
         local bind = {Key = defaultKey, Callback = callback}
         table.insert(Tab.Keybinds, bind)
+    end
+
+    function Tab:AddLabel(text)
+        local l = Instance.new("TextLabel", Content)
+        l.Size = UDim2.new(0, 200, 0, 30)
+        l.Text = text
     end
 
     return Tab
