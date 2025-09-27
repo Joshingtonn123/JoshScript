@@ -1,4 +1,4 @@
--- Syrex UI Library - With Loading Screen
+-- Syrex UI Library - With Loading Screen & Fixed Draggable
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -22,10 +22,12 @@ local Settings = {
 
 -- UI Configuration
 local UIConfig = {
-    Title = "My Awesome GUI V2",
-    Subtitle = "Customize this text",
+    Title = "SyrexUI",
+    Subtitle = "SyrexUI", 
+    LoadingText = "SyrexUI",
     TitleSize = 24,
     SubtitleSize = 14,
+    LoadingTextSize = 16,
 }
 
 -- ScreenGui
@@ -56,10 +58,10 @@ local LoadingSubtitle = Instance.new("TextLabel", LoadingFrame)
 LoadingSubtitle.Size = UDim2.new(1, -40, 0, 30)
 LoadingSubtitle.Position = UDim2.new(0, 20, 0, 90)
 LoadingSubtitle.BackgroundTransparency = 1
-LoadingSubtitle.Text = UIConfig.Subtitle
+LoadingSubtitle.Text = UIConfig.LoadingText  -- This shows "SyrexUI" in loading screen
 LoadingSubtitle.TextColor3 = Color3.fromRGB(200,200,200)
 LoadingSubtitle.Font = Enum.Font.SourceSans
-LoadingSubtitle.TextSize = UIConfig.SubtitleSize
+LoadingSubtitle.TextSize = UIConfig.LoadingTextSize
 LoadingSubtitle.TextXAlignment = Enum.TextXAlignment.Center
 
 local LoadingBar = Instance.new("Frame", LoadingFrame)
@@ -112,6 +114,9 @@ Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0,6)
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Size = UDim2.new(1,0,0,60)
 TopBar.BackgroundTransparency = 1
+TopBar.Active = true  -- Important for draggable
+TopBar.BackgroundColor3 = Color3.fromRGB(255, 0, 0)  -- Red background for debugging
+TopBar.BackgroundTransparency = 1  -- Make it transparent but still clickable
 
 local TitleContainer = Instance.new("Frame", TopBar)
 TitleContainer.Size = UDim2.new(1,-120,1,0)
@@ -123,7 +128,7 @@ Title.Size = UDim2.new(1,0,0.6,0)
 Title.Position = UDim2.new(0,0,0,0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.FredokaOne
-Title.Text = UIConfig.Title  -- No brackets, no animation
+Title.Text = UIConfig.Title  -- Shows "SyrexUI"
 Title.TextColor3 = Theme.Text
 Title.TextSize = UIConfig.TitleSize
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -134,7 +139,7 @@ Subtitle.Size = UDim2.new(1,0,0.4,0)
 Subtitle.Position = UDim2.new(0,0,0.6,0)
 Subtitle.BackgroundTransparency = 1
 Subtitle.Font = Enum.Font.SourceSans
-Subtitle.Text = UIConfig.Subtitle
+Subtitle.Text = UIConfig.Subtitle  -- Shows "SyrexUI" under title
 Subtitle.TextColor3 = Color3.fromRGB(200,200,200)
 Subtitle.TextSize = UIConfig.SubtitleSize
 Subtitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -189,16 +194,19 @@ local function showLoadingScreen()
 end
 
 -- CreateWindow with loading screen
-function SyrexUI:CreateWindow(name, subtitle)
-    if name then
-        UIConfig.Title = name
-        Title.Text = name
-        LoadingTitle.Text = name
+function SyrexUI:CreateWindow(title, subtitle, loadingText)
+    if title then
+        UIConfig.Title = title
+        Title.Text = title
+        LoadingTitle.Text = title
     end
     if subtitle then
         UIConfig.Subtitle = subtitle
         Subtitle.Text = subtitle
-        LoadingSubtitle.Text = subtitle
+    end
+    if loadingText then
+        UIConfig.LoadingText = loadingText
+        LoadingSubtitle.Text = loadingText
     end
     
     -- Show loading screen first
@@ -215,6 +223,7 @@ function SyrexUI:CreateWindow(name, subtitle)
         if newTitle then
             UIConfig.Title = newTitle
             Title.Text = newTitle
+            LoadingTitle.Text = newTitle
         end
     end
     
@@ -225,11 +234,18 @@ function SyrexUI:CreateWindow(name, subtitle)
         end
     end
     
+    function window:SetLoadingText(newLoadingText)
+        if newLoadingText then
+            UIConfig.LoadingText = newLoadingText
+            LoadingSubtitle.Text = newLoadingText
+        end
+    end
+    
     return window
 end
 
 -- Method to configure UI appearance
-function SyrexUI:UI(title, subtitle, titleSize, subtitleSize)
+function SyrexUI:UI(title, subtitle, loadingText, titleSize, subtitleSize, loadingTextSize)
     if title then 
         UIConfig.Title = title
         Title.Text = title
@@ -238,7 +254,10 @@ function SyrexUI:UI(title, subtitle, titleSize, subtitleSize)
     if subtitle then 
         UIConfig.Subtitle = subtitle
         Subtitle.Text = subtitle
-        LoadingSubtitle.Text = subtitle
+    end
+    if loadingText then 
+        UIConfig.LoadingText = loadingText
+        LoadingSubtitle.Text = loadingText
     end
     if titleSize then 
         UIConfig.TitleSize = titleSize
@@ -248,7 +267,10 @@ function SyrexUI:UI(title, subtitle, titleSize, subtitleSize)
     if subtitleSize then 
         UIConfig.SubtitleSize = subtitleSize
         Subtitle.TextSize = subtitleSize
-        LoadingSubtitle.TextSize = subtitleSize
+    end
+    if loadingTextSize then 
+        UIConfig.LoadingTextSize = loadingTextSize
+        LoadingSubtitle.TextSize = loadingTextSize
     end
     return self
 end
@@ -535,68 +557,64 @@ UserInputService.InputBegan:Connect(function(input, gp)
         Gui.Enabled = not Gui.Enabled
         ToggleBtn.Text = Gui.Enabled and "Close" or "Open"
     end
-end)
+end
 
--- Make draggable - FIXED DRAGGABLE
+-- FIXED DRAGGABLE FUNCTION
 local function MakeDraggable(topbar, frame)
-    local Dragging, DragInput, DragStart, StartPos
-    
-    local function Update(input)
-        local Delta = input.Position - DragStart
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
         frame.Position = UDim2.new(
-            StartPos.X.Scale, StartPos.X.Offset + Delta.X,
-            StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
         )
     end
-    
+
     topbar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            Dragging = true
-            DragStart = input.Position
-            StartPos = frame.Position
-            
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+
             local connection
             connection = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
-                    Dragging = false
+                    dragging = false
                     connection:Disconnect()
                 end
             end)
         end
     end)
-    
+
     topbar.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
-            DragInput = input
+            dragInput = input
         end
     end)
-    
+
     UserInputService.InputChanged:Connect(function(input)
-        if input == DragInput and Dragging then
-            Update(input)
+        if input == dragInput and dragging then
+            update(input)
         end
     end)
 end
 
--- Apply draggable to both frames
-MakeDraggable(TopBar, MainFrame)
-MakeDraggable(TabFrame, TabFrame)
-
 -- Make toggle button draggable
-local ToggleDragging = false
-local ToggleDragStart = nil
-local ToggleStartPos = nil
+local toggleDragging = false
+local toggleDragStart, toggleStartPos
 
 ToggleBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        ToggleDragging = true
-        ToggleDragStart = input.Position
-        ToggleStartPos = ToggleBtn.Position
-        
+        toggleDragging = true
+        toggleDragStart = input.Position
+        toggleStartPos = ToggleBtn.Position
+
         local connection
         connection = input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
-                ToggleDragging = false
+                toggleDragging = false
                 connection:Disconnect()
             end
         end)
@@ -604,13 +622,20 @@ ToggleBtn.InputBegan:Connect(function(input)
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if ToggleDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local Delta = input.Position - ToggleDragStart
+    if toggleDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - toggleDragStart
         ToggleBtn.Position = UDim2.new(
-            ToggleStartPos.X.Scale, ToggleStartPos.X.Offset + Delta.X,
-            ToggleStartPos.Y.Scale, ToggleStartPos.Y.Offset + Delta.Y
+            toggleStartPos.X.Scale, toggleStartPos.X.Offset + delta.X,
+            toggleStartPos.Y.Scale, toggleStartPos.Y.Offset + delta.Y
         )
     end
+end)
+
+-- Apply draggable to frames (FIXED - call this after frames are created)
+spawn(function()
+    wait(0.1) -- Small delay to ensure frames are created
+    MakeDraggable(TopBar, MainFrame)
+    MakeDraggable(TabFrame, TabFrame)
 end)
 
 -- Return the library
