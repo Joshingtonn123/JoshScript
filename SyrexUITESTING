@@ -1,4 +1,4 @@
--- Syrex UI Library - With Title Animation & Subtitle
+-- Syrex UI Library - With Loading Screen
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -7,6 +7,7 @@ end
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
 
 local Theme = {
     Background = Color3.fromRGB(9,9,13),
@@ -33,24 +34,67 @@ Gui.Name = "SyrexUILib"
 Gui.Parent = CoreGui
 Gui.ResetOnSpawn = false
 
--- Main GUI Frame
+-- Loading Screen
+local LoadingFrame = Instance.new("Frame")
+LoadingFrame.Size = UDim2.new(0, 400, 0, 200)
+LoadingFrame.Position = UDim2.new(0.5, -200, 0.5, -100)
+LoadingFrame.BackgroundColor3 = Theme.Background
+LoadingFrame.Parent = Gui
+Instance.new("UICorner", LoadingFrame).CornerRadius = UDim.new(0,6)
+
+local LoadingTitle = Instance.new("TextLabel", LoadingFrame)
+LoadingTitle.Size = UDim2.new(1, -40, 0, 60)
+LoadingTitle.Position = UDim2.new(0, 20, 0, 30)
+LoadingTitle.BackgroundTransparency = 1
+LoadingTitle.Text = UIConfig.Title
+LoadingTitle.TextColor3 = Theme.Text
+LoadingTitle.Font = Enum.Font.FredokaOne
+LoadingTitle.TextSize = UIConfig.TitleSize
+LoadingTitle.TextXAlignment = Enum.TextXAlignment.Center
+
+local LoadingSubtitle = Instance.new("TextLabel", LoadingFrame)
+LoadingSubtitle.Size = UDim2.new(1, -40, 0, 30)
+LoadingSubtitle.Position = UDim2.new(0, 20, 0, 90)
+LoadingSubtitle.BackgroundTransparency = 1
+LoadingSubtitle.Text = UIConfig.Subtitle
+LoadingSubtitle.TextColor3 = Color3.fromRGB(200,200,200)
+LoadingSubtitle.Font = Enum.Font.SourceSans
+LoadingSubtitle.TextSize = UIConfig.SubtitleSize
+LoadingSubtitle.TextXAlignment = Enum.TextXAlignment.Center
+
+local LoadingBar = Instance.new("Frame", LoadingFrame)
+LoadingBar.Size = UDim2.new(0.8, 0, 0, 4)
+LoadingBar.Position = UDim2.new(0.1, 0, 0, 140)
+LoadingBar.BackgroundColor3 = Theme.Section
+LoadingBar.BorderSizePixel = 0
+Instance.new("UICorner", LoadingBar).CornerRadius = UDim.new(1,0)
+
+local LoadingBarFill = Instance.new("Frame", LoadingBar)
+LoadingBarFill.Size = UDim2.new(0, 0, 1, 0)
+LoadingBarFill.BackgroundColor3 = Theme.Element
+LoadingBarFill.BorderSizePixel = 0
+Instance.new("UICorner", LoadingBarFill).CornerRadius = UDim.new(1,0)
+
+-- Main GUI Frame (initially hidden)
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0,520,0,340)
 MainFrame.Position = UDim2.new(0.5,-260,0.5,-170)
 MainFrame.BackgroundColor3 = Theme.Background
 MainFrame.Active = true
 MainFrame.Parent = Gui
+MainFrame.Visible = false
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,6)
 
--- Floating Tab Bar
+-- Floating Tab Bar (initially hidden)
 local TabFrame = Instance.new("Frame")
 TabFrame.Size = UDim2.new(0,100,0,340)
 TabFrame.Position = UDim2.new(0.5,-370,0.5,-170)
 TabFrame.BackgroundColor3 = Theme.Background
 TabFrame.Parent = Gui
+TabFrame.Visible = false
 Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,6)
 
--- GUI Toggle Button
+-- GUI Toggle Button (initially hidden)
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 80, 0, 40)
 ToggleBtn.Position = UDim2.new(0, 10, 0.5, -20)
@@ -59,16 +103,16 @@ ToggleBtn.Text = "Close"
 ToggleBtn.TextColor3 = Theme.Text
 ToggleBtn.Font = Enum.Font.SourceSansBold
 ToggleBtn.TextSize = 16
+ToggleBtn.Visible = false
 ToggleBtn.Parent = CoreGui
 ToggleBtn.ZIndex = 10
 Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0,6)
 
--- Enhanced TopBar with Title Animation
+-- Enhanced TopBar with Title (no animation)
 local TopBar = Instance.new("Frame", MainFrame)
-TopBar.Size = UDim2.new(1,0,0,60) -- Increased height for title and subtitle
+TopBar.Size = UDim2.new(1,0,0,60)
 TopBar.BackgroundTransparency = 1
 
--- Title with animation effect
 local TitleContainer = Instance.new("Frame", TopBar)
 TitleContainer.Size = UDim2.new(1,-120,1,0)
 TitleContainer.Position = UDim2.new(0,12,0,0)
@@ -79,13 +123,12 @@ Title.Size = UDim2.new(1,0,0.6,0)
 Title.Position = UDim2.new(0,0,0,0)
 Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.FredokaOne
-Title.Text = UIConfig.Title
+Title.Text = UIConfig.Title  -- No brackets, no animation
 Title.TextColor3 = Theme.Text
 Title.TextSize = UIConfig.TitleSize
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.TextYAlignment = Enum.TextYAlignment.Bottom
 
--- Subtitle
 local Subtitle = Instance.new("TextLabel", TitleContainer)
 Subtitle.Size = UDim2.new(1,0,0.4,0)
 Subtitle.Position = UDim2.new(0,0,0.6,0)
@@ -123,41 +166,43 @@ local SyrexUI = {
     UIConfig = UIConfig
 }
 
--- Title Animation Function
-local function startTitleAnimation()
-    spawn(function()
-        while Title and Title.Parent do
-            -- Type out animation
-            for i = 1, #UIConfig.Title do
-                if not Title or not Title.Parent then break end
-                Title.Text = "< " .. string.sub(UIConfig.Title, 1, i) .. " >"
-                wait(0.05)
-            end
-            wait(1)
-            -- Type back animation
-            for i = #UIConfig.Title, 1, -1 do
-                if not Title or not Title.Parent then break end
-                Title.Text = "< " .. string.sub(UIConfig.Title, 1, i) .. " >"
-                wait(0.05)
-            end
-            wait(0.5)
-        end
-    end)
+-- Loading function
+local function showLoadingScreen()
+    -- Animate loading bar
+    local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(LoadingBarFill, tweenInfo, {Size = UDim2.new(1, 0, 1, 0)})
+    tween:Play()
+    
+    wait(2.2) -- Wait for loading animation
+    
+    -- Fade out loading screen
+    local fadeTween = TweenService:Create(LoadingFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1})
+    fadeTween:Play()
+    
+    wait(0.5)
+    LoadingFrame.Visible = false
+    
+    -- Show main UI
+    MainFrame.Visible = true
+    TabFrame.Visible = true
+    ToggleBtn.Visible = true
 end
 
--- CreateWindow with title and subtitle support
+-- CreateWindow with loading screen
 function SyrexUI:CreateWindow(name, subtitle)
     if name then
         UIConfig.Title = name
         Title.Text = name
+        LoadingTitle.Text = name
     end
     if subtitle then
         UIConfig.Subtitle = subtitle
         Subtitle.Text = subtitle
+        LoadingSubtitle.Text = subtitle
     end
     
-    -- Start title animation
-    startTitleAnimation()
+    -- Show loading screen first
+    showLoadingScreen()
     
     -- Return window object with CreateTab method
     local window = {}
@@ -188,18 +233,22 @@ function SyrexUI:UI(title, subtitle, titleSize, subtitleSize)
     if title then 
         UIConfig.Title = title
         Title.Text = title
+        LoadingTitle.Text = title
     end
     if subtitle then 
         UIConfig.Subtitle = subtitle
         Subtitle.Text = subtitle
+        LoadingSubtitle.Text = subtitle
     end
     if titleSize then 
         UIConfig.TitleSize = titleSize
         Title.TextSize = titleSize
+        LoadingTitle.TextSize = titleSize
     end
     if subtitleSize then 
         UIConfig.SubtitleSize = subtitleSize
         Subtitle.TextSize = subtitleSize
+        LoadingSubtitle.TextSize = subtitleSize
     end
     return self
 end
@@ -207,7 +256,7 @@ end
 -- CreateTab
 function SyrexUI:CreateTab(name)
     local content = Instance.new("ScrollingFrame", MainFrame)
-    content.Size = UDim2.new(1,-24,1,-76) -- Adjusted for larger topbar
+    content.Size = UDim2.new(1,-24,1,-76)
     content.Position = UDim2.new(0,12,0,64)
     content.BackgroundTransparency = 1
     content.Visible = false
@@ -465,7 +514,7 @@ MinBtn.MouseButton1Click:Connect(function()
         for _, t in pairs(SyrexUI.Tabs) do
             t.content.Visible = false
         end
-        MainFrame.Size = UDim2.new(0,520,0,60) -- Same width, smaller height
+        MainFrame.Size = UDim2.new(0,520,0,60)
     else
         for _, t in pairs(SyrexUI.Tabs) do
             t.content.Visible = (t.button.BackgroundColor3 == Theme.Element)
@@ -488,9 +537,10 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
--- Make draggable
+-- Make draggable - FIXED DRAGGABLE
 local function MakeDraggable(topbar, frame)
     local Dragging, DragInput, DragStart, StartPos
+    
     local function Update(input)
         local Delta = input.Position - DragStart
         frame.Position = UDim2.new(
@@ -498,23 +548,29 @@ local function MakeDraggable(topbar, frame)
             StartPos.Y.Scale, StartPos.Y.Offset + Delta.Y
         )
     end
+    
     topbar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             Dragging = true
             DragStart = input.Position
             StartPos = frame.Position
-            input.Changed:Connect(function()
+            
+            local connection
+            connection = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     Dragging = false
+                    connection:Disconnect()
                 end
             end)
         end
     end)
+    
     topbar.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             DragInput = input
         end
     end)
+    
     UserInputService.InputChanged:Connect(function(input)
         if input == DragInput and Dragging then
             Update(input)
@@ -522,8 +578,40 @@ local function MakeDraggable(topbar, frame)
     end)
 end
 
+-- Apply draggable to both frames
 MakeDraggable(TopBar, MainFrame)
 MakeDraggable(TabFrame, TabFrame)
+
+-- Make toggle button draggable
+local ToggleDragging = false
+local ToggleDragStart = nil
+local ToggleStartPos = nil
+
+ToggleBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        ToggleDragging = true
+        ToggleDragStart = input.Position
+        ToggleStartPos = ToggleBtn.Position
+        
+        local connection
+        connection = input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                ToggleDragging = false
+                connection:Disconnect()
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if ToggleDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local Delta = input.Position - ToggleDragStart
+        ToggleBtn.Position = UDim2.new(
+            ToggleStartPos.X.Scale, ToggleStartPos.X.Offset + Delta.X,
+            ToggleStartPos.Y.Scale, ToggleStartPos.Y.Offset + Delta.Y
+        )
+    end
+end)
 
 -- Return the library
 return SyrexUI
