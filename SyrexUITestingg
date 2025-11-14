@@ -1,4 +1,4 @@
--- Syrex UI Library - With Fixed Minimize, Title Animation, and Working Keybinds
+-- Syrex UI Library - With Fixed Tab Movement and Animations
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -237,40 +237,114 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Floating tab offset
+-- Improved Tab Movement System with Animations
 local independent = false
 local defaultOffset = Vector2.new(-110,0)
-local function getOffset()
-    return Vector2.new(TabFrame.AbsolutePosition.X-MainFrame.AbsolutePosition.X, TabFrame.AbsolutePosition.Y-MainFrame.AbsolutePosition.Y)
-end
-local tabOffset = getOffset()
+local tabOffset = defaultOffset
 
+-- Function to get current offset
+local function getOffset()
+    return Vector2.new(TabFrame.AbsolutePosition.X - MainFrame.AbsolutePosition.X, TabFrame.AbsolutePosition.Y - MainFrame.AbsolutePosition.Y)
+end
+
+-- Function to animate tab movement
+local function animateTabToPosition(targetPosition)
+    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(TabFrame, tweenInfo, {Position = targetPosition})
+    tween:Play()
+end
+
+-- Function to snap tabs back to main frame
+local function snapTabsToMainFrame()
+    independent = false
+    local mainPos = MainFrame.AbsolutePosition
+    local targetPos = UDim2.fromOffset(mainPos.X + defaultOffset.X, mainPos.Y + defaultOffset.Y)
+    animateTabToPosition(targetPos)
+    tabOffset = defaultOffset
+end
+
+-- Update tab position to follow main frame
 RunService.RenderStepped:Connect(function()
-    if not independent and TabFrame.Visible then
-        local newPos = Vector2.new(MainFrame.AbsolutePosition.X+tabOffset.X, MainFrame.AbsolutePosition.Y+tabOffset.Y)
-        TabFrame.Position = UDim2.fromOffset(newPos.X,newPos.Y)
+    if not independent and TabFrame.Visible and MainFrame.Visible then
+        local mainPos = MainFrame.AbsolutePosition
+        TabFrame.Position = UDim2.fromOffset(mainPos.X + tabOffset.X, mainPos.Y + tabOffset.Y)
     end
 end)
 
-TabFrame:GetPropertyChangedSignal("Position"):Connect(function()
-    if independent then tabOffset = getOffset() end
+-- Make main frame draggable and update tab position
+local MainDragging = false
+local MainDragStart = nil
+local MainStartPos = nil
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        MainDragging = true
+        MainDragStart = input.Position
+        MainStartPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                MainDragging = false
+            end
+        end)
+    end
 end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if MainDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local Delta = input.Position - MainDragStart
+        local newPos = UDim2.new(
+            MainStartPos.X.Scale, MainStartPos.X.Offset + Delta.X,
+            MainStartPos.Y.Scale, MainStartPos.Y.Offset + Delta.Y
+        )
+        MainFrame.Position = newPos
+        
+        -- Update tab position to follow main frame
+        if not independent then
+            local mainPos = MainFrame.AbsolutePosition
+            TabFrame.Position = UDim2.fromOffset(mainPos.X + tabOffset.X, mainPos.Y + tabOffset.Y)
+        end
+    end
+end)
+
+-- Make tabs draggable
+local TabDragging = false
+local TabDragStart = nil
+local TabStartPos = nil
 
 TabFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        TabDragging = true
         independent = true
+        TabDragStart = input.Position
+        TabStartPos = TabFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                TabDragging = false
+            end
+        end)
     end
 end)
 
+UserInputService.InputChanged:Connect(function(input)
+    if TabDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local Delta = input.Position - TabDragStart
+        TabFrame.Position = UDim2.new(
+            TabStartPos.X.Scale, TabStartPos.X.Offset + Delta.X,
+            TabStartPos.Y.Scale, TabStartPos.Y.Offset + Delta.Y
+        )
+    end
+end)
+
+-- Double click to snap tabs back to main frame
 local lastClick = 0
 TabFrame.InputBegan:Connect(function(input)
-    if input.UserInputType==Enum.UserInputType.MouseButton1 then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
         local now = tick()
-        if now-lastClick<0.3 then
-            independent=false
-            tabOffset = defaultOffset
+        if now - lastClick < 0.3 then
+            -- Double click detected - snap tabs back
+            snapTabsToMainFrame()
         end
-        lastClick=now
+        lastClick = now
     end
 end)
 
@@ -428,6 +502,12 @@ function SyrexUI:SetTitle(mainTitle, subTitle, subTitleSize)
         SubTitle.TextSize = subTitleSize
     end
     
+    return self
+end
+
+-- Method to snap tabs back to main frame
+function SyrexUI:SnapTabs()
+    snapTabsToMainFrame()
     return self
 end
 
