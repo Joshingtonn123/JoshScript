@@ -1,4 +1,4 @@
--- Syrex UI Library - With Named Parameter Support
+-- Syrex UI Library - With Fixed Named Parameter Support
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -400,18 +400,20 @@ ToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- CreateWindow with Table Parameter Support
-function SyrexUI:CreateWindow(options)
-    -- Handle both table format and old format for backward compatibility
+-- CreateWindow with Named Parameter Support
+function SyrexUI:CreateWindow(...)
+    local args = {...}
     local name, subtitle
     
-    if type(options) == "table" then
+    -- Check if first argument is a table (named parameters)
+    if type(args[1]) == "table" then
+        local options = args[1]
         name = options.Name or options.name or options.Title or options.title
         subtitle = options.Subtitles or options.subtitles or options.SubTitle or options.subtitle
     else
         -- Old format support
-        name = options
-        subtitle = select(2, ...)
+        name = args[1]
+        subtitle = args[2]
     end
     
     if name then
