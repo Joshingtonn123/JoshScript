@@ -1,4 +1,4 @@
--- Syrex UI Library - With Tab Follow Animation and GUI-Only Minimize
+-- Syrex UI Library - With Fixed Tab Follow and Minimize Issues
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -267,6 +267,13 @@ MainFrame.Parent = Gui
 MainFrame.Visible = false
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,8)
 
+-- Main Frame Background (to prevent white background)
+local MainFrameBG = Instance.new("Frame")
+MainFrameBG.Size = UDim2.new(1, 0, 1, 0)
+MainFrameBG.BackgroundColor3 = Theme.Background
+MainFrameBG.Parent = MainFrame
+Instance.new("UICorner", MainFrameBG).CornerRadius = UDim.new(0,8)
+
 -- Floating Tab Bar
 local TabFrame = Instance.new("Frame")
 TabFrame.Size = UDim2.new(0,110,0,360)
@@ -275,6 +282,13 @@ TabFrame.BackgroundColor3 = Theme.Background
 TabFrame.Parent = Gui
 TabFrame.Visible = false
 Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0,8)
+
+-- Tab Frame Background (to prevent white background)
+local TabFrameBG = Instance.new("Frame")
+TabFrameBG.Size = UDim2.new(1, 0, 1, 0)
+TabFrameBG.BackgroundColor3 = Theme.Background
+TabFrameBG.Parent = TabFrame
+Instance.new("UICorner", TabFrameBG).CornerRadius = UDim.new(0,8)
 
 -- GUI Toggle Button
 local ToggleBtn = Instance.new("TextButton")
@@ -318,48 +332,25 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Improved Tab Movement System with Follow Animation
+-- Improved Tab Movement System with Instant Follow
 local tabsIndependent = false
 local tabOffset = Vector2.new(-120, 0)
-local isAnimating = false
-
--- Function to animate tab following main frame
-local function animateTabFollow(targetPosition)
-    if isAnimating then return end
-    isAnimating = true
-    
-    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local tween = TweenService:Create(TabFrame, tweenInfo, {Position = targetPosition})
-    
-    tween.Completed:Connect(function()
-        isAnimating = false
-    end)
-    
-    tween:Play()
-end
 
 -- Function to update tab position relative to main frame
 local function updateTabPosition()
-    if not tabsIndependent and MainFrame.Visible and TabFrame.Visible and not isAnimating then
+    if not tabsIndependent and MainFrame.Visible and TabFrame.Visible then
         local mainPos = MainFrame.AbsolutePosition
-        local targetPos = UDim2.fromOffset(mainPos.X + tabOffset.X, mainPos.Y + tabOffset.Y)
-        animateTabFollow(targetPos)
+        TabFrame.Position = UDim2.fromOffset(mainPos.X + tabOffset.X, mainPos.Y + tabOffset.Y)
     end
 end
 
 -- Make main frame draggable and update tab position
 MakeDraggable(MainFrame, MainFrame)
 
--- Update tab position when main frame moves
-local lastMainPos = MainFrame.AbsolutePosition
+-- Update tab position instantly when main frame moves (no delay)
 MainFrame:GetPropertyChangedSignal("Position"):Connect(function()
     if not tabsIndependent then
-        local currentPos = MainFrame.AbsolutePosition
-        -- Only update if position actually changed
-        if (currentPos - lastMainPos).Magnitude > 1 then
-            updateTabPosition()
-            lastMainPos = currentPos
-        end
+        updateTabPosition()
     end
 end)
 
@@ -372,13 +363,13 @@ TabFrame.InputBegan:Connect(function(input)
     end
 end)
 
--- Double click to snap tabs back to main frame with animation
+-- Double click to snap tabs back to main frame
 local lastTabClick = 0
 TabFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         local now = tick()
         if now - lastTabClick < 0.3 then
-            -- Double click detected - snap tabs back with animation
+            -- Double click detected - snap tabs back
             tabsIndependent = false
             updateTabPosition()
         end
@@ -390,12 +381,14 @@ end)
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Size = UDim2.new(1,0,0,50)
 TopBar.BackgroundTransparency = 1
+TopBar.ZIndex = 2
 
 -- Title Container for proper alignment
 local TitleContainer = Instance.new("Frame", TopBar)
 TitleContainer.Size = UDim2.new(1,-80,1,0)
 TitleContainer.Position = UDim2.new(0,15,0,0)
 TitleContainer.BackgroundTransparency = 1
+TitleContainer.ZIndex = 2
 
 -- Main Title - Rayfield style (bigger and bold)
 local Title = Instance.new("TextLabel", TitleContainer)
@@ -408,6 +401,7 @@ Title.TextColor3 = Theme.Text
 Title.TextSize = 20
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.TextYAlignment = Enum.TextYAlignment.Bottom
+Title.ZIndex = 2
 
 -- Subtitle Text - Rayfield style (smaller, right next to title)
 local SubTitle = Instance.new("TextLabel", TitleContainer)
@@ -421,6 +415,7 @@ SubTitle.TextSize = TitleConfig.SubTitleSize
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.TextYAlignment = Enum.TextYAlignment.Top
 SubTitle.TextTransparency = 0.5
+SubTitle.ZIndex = 2
 
 local CloseBtn = Instance.new("TextButton", TopBar)
 CloseBtn.Size = UDim2.new(0,60,0,24)
@@ -430,6 +425,7 @@ CloseBtn.Text = "Close"
 CloseBtn.TextColor3 = Theme.Text
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.TextSize = 12
+CloseBtn.ZIndex = 2
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0,6)
 
 local MinBtn = Instance.new("TextButton", TopBar)
@@ -440,7 +436,16 @@ MinBtn.Text = "-"
 MinBtn.TextColor3 = Theme.Text
 MinBtn.Font = Enum.Font.GothamBold
 MinBtn.TextSize = 16
+MinBtn.ZIndex = 2
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0,6)
+
+-- Content Container (to prevent content from moving during minimize)
+local ContentContainer = Instance.new("Frame", MainFrame)
+ContentContainer.Size = UDim2.new(1,-24,1,-72)
+ContentContainer.Position = UDim2.new(0,12,0,62)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.ClipsDescendants = true
+ContentContainer.ZIndex = 1
 
 -- Library Table
 local SyrexUI = {
@@ -458,28 +463,21 @@ local function animateMinimize(minimized)
         -- Animate only main frame minimize (keep tabs full size)
         local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         local sizeTween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0,520,0,50)})
+        local bgSizeTween = TweenService:Create(MainFrameBG, tweenInfo, {Size = UDim2.new(1, 0, 1, 0)})
         
         sizeTween:Play()
+        bgSizeTween:Play()
         
         -- Fade out subtitle
         local subtitleTween = TweenService:Create(SubTitle, TweenInfo.new(0.2), {TextTransparency = 1})
         subtitleTween:Play()
         
-        -- Hide all tab contents with fade out
-        for _, t in pairs(SyrexUI.Tabs) do
-            if t.content.Visible then
-                local contentTween = TweenService:Create(t.content, TweenInfo.new(0.2), {BackgroundTransparency = 1})
-                contentTween:Play()
-            end
-        end
-        
-        -- Wait for animation to complete then hide contents
-        wait(0.3)
+        -- Hide all tab contents
         for _, t in pairs(SyrexUI.Tabs) do
             t.content.Visible = false
-            t.content.BackgroundTransparency = 0
         end
         SubTitle.Visible = false
+        
     else
         -- Show subtitle first
         SubTitle.Visible = true
@@ -489,17 +487,15 @@ local function animateMinimize(minimized)
         -- Animate only main frame maximize
         local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         local sizeTween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0,520,0,360)})
+        local bgSizeTween = TweenService:Create(MainFrameBG, tweenInfo, {Size = UDim2.new(1, 0, 1, 0)})
         
         sizeTween:Play()
+        bgSizeTween:Play()
         
-        -- Show active tab content with fade in
-        wait(0.3) -- Wait for size animation to partially complete
+        -- Show active tab content
         for _, t in pairs(SyrexUI.Tabs) do
             if t.button.BackgroundColor3 == Theme.Element then
                 t.content.Visible = true
-                t.content.BackgroundTransparency = 1
-                local contentTween = TweenService:Create(t.content, TweenInfo.new(0.2), {BackgroundTransparency = 0})
-                contentTween:Play()
             end
         end
     end
@@ -678,15 +674,16 @@ end
 
 -- CreateTab
 function SyrexUI:CreateTab(name)
-    local content = Instance.new("ScrollingFrame", MainFrame)
-    content.Size = UDim2.new(1,-24,1,-72)
-    content.Position = UDim2.new(0,12,0,62)
+    local content = Instance.new("ScrollingFrame", ContentContainer)
+    content.Size = UDim2.new(1, 0, 1, 0)
+    content.Position = UDim2.new(0, 0, 0, 0)
     content.BackgroundTransparency = 1
     content.Visible = false
     content.ScrollingEnabled = true
     content.ScrollBarThickness = 6
     content.AutomaticCanvasSize = Enum.AutomaticSize.Y
     content.CanvasSize = UDim2.new(0,0,0,0)
+    content.ZIndex = 1
 
     local btn = Instance.new("TextButton", TabFrame)
     btn.Size = UDim2.new(1,-10,0,40)
@@ -696,6 +693,7 @@ function SyrexUI:CreateTab(name)
     btn.TextColor3 = Theme.Text
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 14
+    btn.ZIndex = 2
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
 
     btn.MouseButton1Click:Connect(function()
