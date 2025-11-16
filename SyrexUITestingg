@@ -1,4 +1,4 @@
--- Syrex UI Library - With Smooth Minimize and Tab Animations
+-- Syrex UI Library - With Tab Follow Animation and GUI-Only Minimize
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -318,15 +318,32 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Improved Tab Movement System
+-- Improved Tab Movement System with Follow Animation
 local tabsIndependent = false
 local tabOffset = Vector2.new(-120, 0)
+local isAnimating = false
+
+-- Function to animate tab following main frame
+local function animateTabFollow(targetPosition)
+    if isAnimating then return end
+    isAnimating = true
+    
+    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(TabFrame, tweenInfo, {Position = targetPosition})
+    
+    tween.Completed:Connect(function()
+        isAnimating = false
+    end)
+    
+    tween:Play()
+end
 
 -- Function to update tab position relative to main frame
 local function updateTabPosition()
-    if not tabsIndependent and MainFrame.Visible and TabFrame.Visible then
+    if not tabsIndependent and MainFrame.Visible and TabFrame.Visible and not isAnimating then
         local mainPos = MainFrame.AbsolutePosition
-        TabFrame.Position = UDim2.fromOffset(mainPos.X + tabOffset.X, mainPos.Y + tabOffset.Y)
+        local targetPos = UDim2.fromOffset(mainPos.X + tabOffset.X, mainPos.Y + tabOffset.Y)
+        animateTabFollow(targetPos)
     end
 end
 
@@ -334,9 +351,15 @@ end
 MakeDraggable(MainFrame, MainFrame)
 
 -- Update tab position when main frame moves
+local lastMainPos = MainFrame.AbsolutePosition
 MainFrame:GetPropertyChangedSignal("Position"):Connect(function()
     if not tabsIndependent then
-        updateTabPosition()
+        local currentPos = MainFrame.AbsolutePosition
+        -- Only update if position actually changed
+        if (currentPos - lastMainPos).Magnitude > 1 then
+            updateTabPosition()
+            lastMainPos = currentPos
+        end
     end
 end)
 
@@ -349,13 +372,13 @@ TabFrame.InputBegan:Connect(function(input)
     end
 end)
 
--- Double click to snap tabs back to main frame
+-- Double click to snap tabs back to main frame with animation
 local lastTabClick = 0
 TabFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         local now = tick()
         if now - lastTabClick < 0.3 then
-            -- Double click detected - snap tabs back
+            -- Double click detected - snap tabs back with animation
             tabsIndependent = false
             updateTabPosition()
         end
@@ -432,13 +455,11 @@ local SyrexUI = {
 -- Animation Functions
 local function animateMinimize(minimized)
     if minimized then
-        -- Animate minimize
+        -- Animate only main frame minimize (keep tabs full size)
         local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         local sizeTween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0,520,0,50)})
-        local tabSizeTween = TweenService:Create(TabFrame, tweenInfo, {Size = UDim2.new(0,110,0,50)})
         
         sizeTween:Play()
-        tabSizeTween:Play()
         
         -- Fade out subtitle
         local subtitleTween = TweenService:Create(SubTitle, TweenInfo.new(0.2), {TextTransparency = 1})
@@ -465,13 +486,11 @@ local function animateMinimize(minimized)
         local subtitleTween = TweenService:Create(SubTitle, TweenInfo.new(0.2), {TextTransparency = 0.5})
         subtitleTween:Play()
         
-        -- Animate maximize
+        -- Animate only main frame maximize
         local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         local sizeTween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0,520,0,360)})
-        local tabSizeTween = TweenService:Create(TabFrame, tweenInfo, {Size = UDim2.new(0,110,0,360)})
         
         sizeTween:Play()
-        tabSizeTween:Play()
         
         -- Show active tab content with fade in
         wait(0.3) -- Wait for size animation to partially complete
@@ -483,27 +502,6 @@ local function animateMinimize(minimized)
                 contentTween:Play()
             end
         end
-    end
-end
-
-local function animateTabSwitch(oldTab, newTab)
-    if oldTab and oldTab.content then
-        -- Fade out old tab
-        local fadeOut = TweenService:Create(oldTab.content, TweenInfo.new(0.2), {BackgroundTransparency = 1})
-        fadeOut:Play()
-        
-        -- Wait for fade out then hide
-        wait(0.2)
-        oldTab.content.Visible = false
-        oldTab.content.BackgroundTransparency = 0
-    end
-    
-    if newTab and newTab.content then
-        -- Show and fade in new tab
-        newTab.content.Visible = true
-        newTab.content.BackgroundTransparency = 1
-        local fadeIn = TweenService:Create(newTab.content, TweenInfo.new(0.2), {BackgroundTransparency = 0})
-        fadeIn:Play()
     end
 end
 
@@ -701,17 +699,12 @@ function SyrexUI:CreateTab(name)
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
 
     btn.MouseButton1Click:Connect(function()
-        local oldActiveTab
         for _, t in pairs(self.Tabs) do
-            if t.content.Visible then
-                oldActiveTab = t
-            end
+            t.content.Visible = false
             t.button.BackgroundColor3 = Theme.Section
         end
+        content.Visible = true
         btn.BackgroundColor3 = Theme.Element
-        
-        -- Animate tab switch
-        animateTabSwitch(oldActiveTab, tabData)
     end)
 
     if #self.Tabs==0 then
@@ -1024,7 +1017,7 @@ function SyrexUI:CreateTab(name)
     return tabData
 end
 
--- Close / Minimize with Animations
+-- Close / Minimize with Animations (GUI only)
 CloseBtn.MouseButton1Click:Connect(function()
     Gui.Enabled = false
     ToggleBtn.Text = "Open"
