@@ -1,4 +1,4 @@
--- Syrex UI Library - With Loading Animation, Rayfield Style, and Bigger Sliders
+-- Syrex UI Library - With Smooth Minimize and Tab Animations
 
 if game.CoreGui:FindFirstChild("SyrexUILib") then
     game.CoreGui.SyrexUILib:Destroy()
@@ -429,6 +429,84 @@ local SyrexUI = {
     TitleConfig = TitleConfig
 }
 
+-- Animation Functions
+local function animateMinimize(minimized)
+    if minimized then
+        -- Animate minimize
+        local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local sizeTween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0,520,0,50)})
+        local tabSizeTween = TweenService:Create(TabFrame, tweenInfo, {Size = UDim2.new(0,110,0,50)})
+        
+        sizeTween:Play()
+        tabSizeTween:Play()
+        
+        -- Fade out subtitle
+        local subtitleTween = TweenService:Create(SubTitle, TweenInfo.new(0.2), {TextTransparency = 1})
+        subtitleTween:Play()
+        
+        -- Hide all tab contents with fade out
+        for _, t in pairs(SyrexUI.Tabs) do
+            if t.content.Visible then
+                local contentTween = TweenService:Create(t.content, TweenInfo.new(0.2), {BackgroundTransparency = 1})
+                contentTween:Play()
+            end
+        end
+        
+        -- Wait for animation to complete then hide contents
+        wait(0.3)
+        for _, t in pairs(SyrexUI.Tabs) do
+            t.content.Visible = false
+            t.content.BackgroundTransparency = 0
+        end
+        SubTitle.Visible = false
+    else
+        -- Show subtitle first
+        SubTitle.Visible = true
+        local subtitleTween = TweenService:Create(SubTitle, TweenInfo.new(0.2), {TextTransparency = 0.5})
+        subtitleTween:Play()
+        
+        -- Animate maximize
+        local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local sizeTween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0,520,0,360)})
+        local tabSizeTween = TweenService:Create(TabFrame, tweenInfo, {Size = UDim2.new(0,110,0,360)})
+        
+        sizeTween:Play()
+        tabSizeTween:Play()
+        
+        -- Show active tab content with fade in
+        wait(0.3) -- Wait for size animation to partially complete
+        for _, t in pairs(SyrexUI.Tabs) do
+            if t.button.BackgroundColor3 == Theme.Element then
+                t.content.Visible = true
+                t.content.BackgroundTransparency = 1
+                local contentTween = TweenService:Create(t.content, TweenInfo.new(0.2), {BackgroundTransparency = 0})
+                contentTween:Play()
+            end
+        end
+    end
+end
+
+local function animateTabSwitch(oldTab, newTab)
+    if oldTab and oldTab.content then
+        -- Fade out old tab
+        local fadeOut = TweenService:Create(oldTab.content, TweenInfo.new(0.2), {BackgroundTransparency = 1})
+        fadeOut:Play()
+        
+        -- Wait for fade out then hide
+        wait(0.2)
+        oldTab.content.Visible = false
+        oldTab.content.BackgroundTransparency = 0
+    end
+    
+    if newTab and newTab.content then
+        -- Show and fade in new tab
+        newTab.content.Visible = true
+        newTab.content.BackgroundTransparency = 1
+        local fadeIn = TweenService:Create(newTab.content, TweenInfo.new(0.2), {BackgroundTransparency = 0})
+        fadeIn:Play()
+    end
+end
+
 -- Loading Animation Function
 local function playLoadingAnimation(title, subtitle, callback)
     LoadingTitle.Text = title or "Syrex UI"
@@ -623,12 +701,17 @@ function SyrexUI:CreateTab(name)
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
 
     btn.MouseButton1Click:Connect(function()
+        local oldActiveTab
         for _, t in pairs(self.Tabs) do
-            t.content.Visible = false
+            if t.content.Visible then
+                oldActiveTab = t
+            end
             t.button.BackgroundColor3 = Theme.Section
         end
-        content.Visible = true
         btn.BackgroundColor3 = Theme.Element
+        
+        -- Animate tab switch
+        animateTabSwitch(oldActiveTab, tabData)
     end)
 
     if #self.Tabs==0 then
@@ -941,7 +1024,7 @@ function SyrexUI:CreateTab(name)
     return tabData
 end
 
--- Close / Minimize
+-- Close / Minimize with Animations
 CloseBtn.MouseButton1Click:Connect(function()
     Gui.Enabled = false
     ToggleBtn.Text = "Open"
@@ -950,19 +1033,7 @@ end)
 local minimized = false
 MinBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
-    if minimized then
-        for _, t in pairs(SyrexUI.Tabs) do
-            t.content.Visible = false
-        end
-        MainFrame.Size = UDim2.new(0,520,0,50)
-        SubTitle.Visible = false
-    else
-        for _, t in pairs(SyrexUI.Tabs) do
-            t.content.Visible = (t.button.BackgroundColor3 == Theme.Element)
-        end
-        MainFrame.Size = UDim2.new(0,520,0,360)
-        SubTitle.Visible = true
-    end
+    animateMinimize(minimized)
 end)
 
 -- Keybind to toggle GUI
