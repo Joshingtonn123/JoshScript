@@ -12,11 +12,7 @@ local TextService = game:GetService('TextService');
 local TweenService = game:GetService('TweenService');
 local CoreGui = game:FindFirstChild('CoreGui') or LocalPlayer.PlayerGui;
 
-local ProtectGui = protectgui or (syn and syn.protect_gui) or function(gui)
-    if gui and gui:IsA("ScreenGui") then
-        gui.Parent = game:GetService("CoreGui")
-    end
-end
+local ProtectGui = protectgui or (syn and syn.protect_gui) or (function() end);
 
 local function cretate_button(asd)
 	local button=Instance.new('TextButton')
@@ -382,77 +378,64 @@ print(Text .. " is Running")
 	end
 
 	task.spawn(function()
-    local ImageButton = Instance.new("ImageButton")
-    ImageButton.Parent = Frame
-    ImageButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    ImageButton.BackgroundTransparency = 1.000
-    ImageButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    ImageButton.BorderSizePixel = 0
-    ImageButton.Position = UDim2.new(0.908723712, 0, 0.0239103697, 0)
-    ImageButton.Size = UDim2.new(0.0900000036, 0, 0.0900000036, 0)
-    ImageButton.SizeConstraint = Enum.SizeConstraint.RelativeYY
-    ImageButton.ZIndex = 4
-    ImageButton.Image = "http://www.roblox.com/asset/?id=6031280882"
-    ImageButton.ScaleType = Enum.ScaleType.Fit
+		local ImageButton = Instance.new("ImageButton")
 
-    ImageButton.MouseButton1Click:Connect(function()
-        toggle_valu = not toggle_valu
+		ImageButton.MouseButton1Click:Connect(function()
+			toggle_valu=not toggle_valu
 
-        if toggle_valu then
-            oldPositionClose = Frame.Position
-            TweenService:Create(ImageButton, TweenInfo.new(0.5), {
-                Size = UDim2.new(0.0900000036, 0, 0.0900000036, 0),
-                Position = UDim2.new(0.908723712, 0, 0.0239103697, 0),
-                AnchorPoint = Vector2.new(0, 0)
-            }):Play()
-        else
-            TweenService:Create(ImageButton, TweenInfo.new(0.5), {
-                Size = UDim2.new(0.3, 0, 0.3, 0),
-                Position = UDim2.new(1, 0, -0.009, 0),
-                AnchorPoint = Vector2.new(1, 0)
-            }):Play()
-        end
+			if toggle_valu then
+				oldPositionClose = Frame.Position
+				TweenService:Create(ImageButton,TweenInfo.new(0.5),{
+					Size=UDim2.new(0.0900000036, 0, 0.0900000036, 0),
+					Position=UDim2.new(0.908723712, 0, 0.0239103697, 0),
+					AnchorPoint=Vector2.new(0,0)
+				}):Play()
+			else
+				TweenService:Create(ImageButton,TweenInfo.new(0.5),{
+					Size=UDim2.new(0.3, 0,0.3, 0),
+					Position=UDim2.new(1,0,-0.009,0),
+					AnchorPoint=Vector2.new(1,0)
+				}):Play()
+			end
 
-        ui_toggleong(toggle_valu)
-    end)
-end)
+			ui_toggleong(toggle_valu)
+		end)
+	end)
 
 	task.spawn(function()
--- KEEP THIS DRAGGING CODE (around line 410) - IT WORKS CORRECTLY
-local dragToggle = nil
-local dragSpeed = 0.25
-local dragStart = nil
-local startPos = nil
+		local dragToggle = nil
+		local dragSpeed = 0.14
+		local dragStart = nil
+		local startPos = nil
 
-local function updateInput(input)
-    local delta = input.Position - dragStart
-    local position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-        startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    game:GetService('TweenService'):Create(Frame, TweenInfo.new(dragSpeed), {Position = position}):Play()
-end
+		local function updateInput(input)
+			local delta = input.Position - dragStart
+			local position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+				startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+			game:GetService('TweenService'):Create(Frame, TweenInfo.new(dragSpeed), {Position = position}):Play()
+		end
 
-Frame.InputBegan:Connect(function(input)
-    if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then 
-        dragToggle = true
-        dragStart = input.Position
-        startPos = Frame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragToggle = false
-            end
-        end)
-    end
-end)
+		Frame.InputBegan:Connect(function(input)
+			if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not toggle_valu then 
+				dragToggle = true
+				dragStart = input.Position
+				startPos = Frame.Position
+				input.Changed:Connect(function()
+					if input.UserInputState == Enum.UserInputState.End then
+						dragToggle = false
+					end
+				end)
+			end
+		end)
 
-InputService.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        if dragToggle then
-            updateInput(input)
-        end
-    end
-end)
-
--- REMOVE THE DUPLICATE DRAGGING CODE THAT STARTS AROUND LINE 1035
+		InputService.InputChanged:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+				if dragToggle and not toggle_valu then
+					updateInput(input)
+				end
+			end
+		end)
+	end)
 
 	local oldGui = game.CoreGui:FindFirstChild("NEVERLOSE")
         if oldGui then
@@ -1136,15 +1119,15 @@ end)
 --
 	
 -- DraggingToggle
---  loadstring(game:HttpGet("https://raw.githubusercontent.com/CludeHub/SourceCludeLib/refs/heads/main/DragToggleSetting.lua"))()
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/CludeHub/SourceCludeLib/refs/heads/main/DragToggleSetting.lua"))()
 ----
 
 -- grow a garden function stock timer
---  loadstring(game:HttpGet("https://raw.githubusercontent.com/CludeHub/SourceCludeLib/refs/heads/main/GrowAGardenStockFunction.lua"))()
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/CludeHub/SourceCludeLib/refs/heads/main/GrowAGardenStockFunction.lua"))()
 --
 
 -- slap battle searchbox function 
---  loadstring(game:HttpGet("https://raw.githubusercontent.com/CludeHub/SourceCludeLib/refs/heads/main/SearchGlovesFunction.lua"))()
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/CludeHub/SourceCludeLib/refs/heads/main/SearchGlovesFunction.lua"))()
 local about = game.CoreGui:WaitForChild("NEVERLOSE"):WaitForChild("AboutFrame")
 
 for _, obj in pairs(about:GetDescendants()) do
@@ -2653,8 +2636,26 @@ Sound2.Ended:Connect(function()
 		game:GetService('TweenService'):Create(Frame, TweenInfo.new(dragSpeed), {Position = position}):Play()
 	end
 
-	Frame.InputBegan:Connect(function(input)
-    if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then 
+	Frame_3.InputBegan:Connect(function(input)
+		if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then 
+			dragToggle = false
+			dragStart = input.Position
+			startPos = Frame.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragToggle = false
+				end
+			end)
+		end
+	end)
+
+	InputService.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			if dragToggle then
+				updateInput(input)
+			end
+		end
+	end)
 
 	return WindowFunctinos
 end
