@@ -382,29 +382,40 @@ print(Text .. " is Running")
 	end
 
 	task.spawn(function()
-		local ImageButton = Instance.new("ImageButton")
+    local ImageButton = Instance.new("ImageButton")
+    ImageButton.Parent = Frame
+    ImageButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    ImageButton.BackgroundTransparency = 1.000
+    ImageButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    ImageButton.BorderSizePixel = 0
+    ImageButton.Position = UDim2.new(0.908723712, 0, 0.0239103697, 0)
+    ImageButton.Size = UDim2.new(0.0900000036, 0, 0.0900000036, 0)
+    ImageButton.SizeConstraint = Enum.SizeConstraint.RelativeYY
+    ImageButton.ZIndex = 4
+    ImageButton.Image = "http://www.roblox.com/asset/?id=6031280882"
+    ImageButton.ScaleType = Enum.ScaleType.Fit
 
-		ImageButton.MouseButton1Click:Connect(function()
-			toggle_valu=not toggle_valu
+    ImageButton.MouseButton1Click:Connect(function()
+        toggle_valu = not toggle_valu
 
-			if toggle_valu then
-				oldPositionClose = Frame.Position
-				TweenService:Create(ImageButton,TweenInfo.new(0.5),{
-					Size=UDim2.new(0.0900000036, 0, 0.0900000036, 0),
-					Position=UDim2.new(0.908723712, 0, 0.0239103697, 0),
-					AnchorPoint=Vector2.new(0,0)
-				}):Play()
-			else
-				TweenService:Create(ImageButton,TweenInfo.new(0.5),{
-					Size=UDim2.new(0.3, 0,0.3, 0),
-					Position=UDim2.new(1,0,-0.009,0),
-					AnchorPoint=Vector2.new(1,0)
-				}):Play()
-			end
+        if toggle_valu then
+            oldPositionClose = Frame.Position
+            TweenService:Create(ImageButton, TweenInfo.new(0.5), {
+                Size = UDim2.new(0.0900000036, 0, 0.0900000036, 0),
+                Position = UDim2.new(0.908723712, 0, 0.0239103697, 0),
+                AnchorPoint = Vector2.new(0, 0)
+            }):Play()
+        else
+            TweenService:Create(ImageButton, TweenInfo.new(0.5), {
+                Size = UDim2.new(0.3, 0, 0.3, 0),
+                Position = UDim2.new(1, 0, -0.009, 0),
+                AnchorPoint = Vector2.new(1, 0)
+            }):Play()
+        end
 
-			ui_toggleong(toggle_valu)
-		end)
-	end)
+        ui_toggleong(toggle_valu)
+    end)
+end)
 
 	task.spawn(function()
 -- KEEP THIS DRAGGING CODE (around line 410) - IT WORKS CORRECTLY
@@ -2644,24 +2655,6 @@ Sound2.Ended:Connect(function()
 
 	Frame.InputBegan:Connect(function(input)
     if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then 
-        dragToggle = true
-        dragStart = input.Position
-        startPos = Frame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragToggle = false
-            end
-        end)
-    end
-end)
-
-	InputService.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-			if dragToggle then
-				updateInput(input)
-			end
-		end
-	end)
 
 	return WindowFunctinos
 end
