@@ -407,7 +407,7 @@ print(Text .. " is Running")
 	end)
 
 	task.spawn(function()
-		-- Dragging functionality
+-- KEEP THIS DRAGGING CODE (around line 410) - IT WORKS CORRECTLY
 local dragToggle = nil
 local dragSpeed = 0.25
 local dragStart = nil
@@ -440,6 +440,8 @@ InputService.InputChanged:Connect(function(input)
         end
     end
 end)
+
+-- REMOVE THE DUPLICATE DRAGGING CODE THAT STARTS AROUND LINE 1035
 
 	local oldGui = game.CoreGui:FindFirstChild("NEVERLOSE")
         if oldGui then
@@ -2642,7 +2644,7 @@ Sound2.Ended:Connect(function()
 
 	Frame_3.InputBegan:Connect(function(input)
 		if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then 
-			dragToggle = false
+			dragToggle = true
 			dragStart = input.Position
 			startPos = Frame.Position
 			input.Changed:Connect(function()
