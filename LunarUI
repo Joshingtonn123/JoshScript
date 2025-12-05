@@ -1,0 +1,99 @@
+-- Loadstring for GitHub
+local LunarUILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/YourUsername/LunarUI/main/Library.lua"))()
+
+-- Example Usage
+local Lunar = LunarUILibrary.new({
+    Theme = "Dark",
+    AccentColor = Color3.fromRGB(100, 70, 200),
+    Keybind = Enum.KeyCode.RightControl
+})
+
+-- Add Watermark
+Lunar:AddWatermark()
+
+-- Create Window
+local MainWindow = Lunar:CreateWindow({
+    Name = "Main",
+    Size = UDim2.new(1, -30, 0, 400)
+})
+
+-- Add Section
+Lunar:CreateSection(MainWindow, {Name = "Combat"})
+
+-- Add Button
+Lunar:CreateButton(MainWindow, {
+    Name = "Kill All",
+    Callback = function()
+        Lunar:Notify({
+            Title = "Combat",
+            Text = "Killed all players!",
+            Type = "Success"
+        })
+    end
+})
+
+-- Add Toggle
+Lunar:CreateToggle(MainWindow, {
+    Name = "God Mode",
+    Callback = function(state)
+        Lunar:Notify({
+            Title = "Toggle",
+            Text = "God Mode: " .. tostring(state),
+            Type = state and "Success" or "Warning"
+        })
+    end
+})
+
+-- Add Slider
+Lunar:CreateSlider(MainWindow, {
+    Name = "Walk Speed",
+    Min = 16,
+    Max = 200,
+    Default = 16,
+    Callback = function(value)
+        Lunar:Notify({
+            Title = "Slider",
+            Text = "Walk Speed set to: " .. value,
+            Type = "Info"
+        })
+    end
+})
+
+-- Add Dropdown
+Lunar:CreateDropdown(MainWindow, {
+    Name = "Weapon Select",
+    Options = {"Sword", "Gun", "Bow", "Axe"},
+    Callback = function(option, index)
+        Lunar:Notify({
+            Title = "Dropdown",
+            Text = "Selected: " .. option,
+            Type = "Info"
+        })
+    end
+})
+
+-- Add TextBox
+Lunar:CreateTextBox(MainWindow, {
+    Name = "Player Name",
+    Placeholder = "Enter player name...",
+    Callback = function(text)
+        Lunar:Notify({
+            Title = "Text Box",
+            Text = "Searching for: " .. text,
+            Type = "Info"
+        })
+    end
+})
+
+-- Add Keybind
+Lunar:CreateKeybind(MainWindow, {
+    Name = "Fly Keybind",
+    Default = Enum.KeyCode.F,
+    Callback = function(key)
+        Lunar:Notify({
+            Title = "Keybind",
+            Text = "Fly keybind set to: " .. key.Name,
+            Type = "Info"
+        })
+    end
+})
